@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1055204795832",
+    "project_id": "quickride-ef150",
+    "storage_bucket": "quickride-ef150.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1055204795832:android:0e4abaf834ccaa6d021b4d",
+        "android_client_info": {
+          "package_name": "com.example.quick_ride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiBTapYgTFYZBodSdVC6dwj-oS3gaox6w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1055204795832:android:57aa2a32ba9ced6f021b4d",
+        "android_client_info": {
+          "package_name": "com.example.quickride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiBTapYgTFYZBodSdVC6dwj-oS3gaox6w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
