@@ -1,9 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.QuickRide" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-    </style>
+    <style name="Theme.QuickRide" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary colors -->
+        <item name="colorPrimary">#2196F3</item>
+        <item name="colorPrimaryDark">#1976D2</item>
 
-    <style name="Theme.QuickRide" parent="Base.Theme.QuickRide" />
+        <!-- Status bar - make transparent -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+
+        <!-- Make sure we have light status bar icons (for dark backgrounds) -->
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- Important: Don't draw under status bar -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+    </style>
 </resources>

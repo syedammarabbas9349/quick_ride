@@ -24,22 +24,12 @@
         android:textColor="#777777"
         android:layout_marginBottom="30dp"/>
 
-    <!-- Full Name -->
-    <EditText
-        android:id="@+id/etFullName"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Enter your full name"
-        android:padding="12dp"
-        android:background="@android:drawable/edit_text"
-        android:layout_marginBottom="16dp"/>
-
     <!-- Email -->
     <EditText
         android:id="@+id/etEmail"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:hint="Enter your email"
+        android:hint="Enter email"
         android:inputType="textEmailAddress"
         android:padding="12dp"
         android:background="@android:drawable/edit_text"
@@ -50,13 +40,24 @@
         android:id="@+id/etPassword"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:hint="Enter your password"
+        android:hint="Enter password"
+        android:inputType="textPassword"
+        android:padding="12dp"
+        android:background="@android:drawable/edit_text"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Confirm Password -->
+    <EditText
+        android:id="@+id/etConfirmPassword"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Confirm password"
         android:inputType="textPassword"
         android:padding="12dp"
         android:background="@android:drawable/edit_text"
         android:layout_marginBottom="24dp"/>
 
-    <!-- Create Account Button -->
+    <!-- Register Button -->
     <Button
         android:id="@+id/btnRegister"
         android:layout_width="match_parent"
@@ -65,6 +66,7 @@
         android:textColor="#FFFFFF"
         android:backgroundTint="#2196F3"/>
 
+    <!-- Go to Login -->
     <TextView
         android:id="@+id/tvGoToLogin"
         android:layout_width="wrap_content"
@@ -72,6 +74,5 @@
         android:text="Already have an account? Login"
         android:textColor="#2196F3"
         android:layout_marginTop="20dp"/>
-
 
 </LinearLayout>

@@ -1,24 +1,37 @@
 package com.example.quickride;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class SplashActivity extends AppCompatActivity {
+
+    FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_splash);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        setContentView(R.layout.activity_splash); // We'll create this layout
+
+        mAuth = FirebaseAuth.getInstance();
+
+        // 1-second delay for splash screen
+        new Handler().postDelayed(() -> {
+            FirebaseUser user = mAuth.getCurrentUser();
+
+            if (user != null) {
+                // User is logged in → go to Home
+                startActivity(new Intent(SplashActivity.this, HomeActivity.class));
+            } else {
+                // User is not logged in → go to MainActivity (welcome screen)
+                startActivity(new Intent(SplashActivity.this, MainActivity.class));
+            }
+            finish(); // Close splash so user can't go back
+        }, 1000);
     }
 }
