@@ -16,22 +16,20 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_splash); // We'll create this layout
+        setContentView(R.layout.activity_splash);
 
         mAuth = FirebaseAuth.getInstance();
-
-        // 1-second delay for splash screen
         new Handler().postDelayed(() -> {
             FirebaseUser user = mAuth.getCurrentUser();
 
             if (user != null) {
-                // User is logged in → go to Home
+
                 startActivity(new Intent(SplashActivity.this, HomeActivity.class));
             } else {
-                // User is not logged in → go to MainActivity (welcome screen)
+
                 startActivity(new Intent(SplashActivity.this, MainActivity.class));
             }
-            finish(); // Close splash so user can't go back
+            finish();
         }, 1000);
     }
 }

@@ -56,7 +56,7 @@ public class LoginActivity extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             Toast.makeText(LoginActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(LoginActivity.this, HomeActivity.class));
-                            finish(); // Prevent going back to login
+                            finish();
                         } else {
                             Toast.makeText(LoginActivity.this,
                                     "Login failed: " + task.getException().getMessage(),
@@ -68,7 +68,7 @@ public class LoginActivity extends AppCompatActivity {
         // Navigate to RegisterActivity
         tvCreateAccount.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
-            finish(); // Optional: remove if you want back button to work
+            finish();
         });
     }
 }

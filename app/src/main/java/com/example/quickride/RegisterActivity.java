@@ -73,10 +73,10 @@ public class RegisterActivity extends AppCompatActivity {
                                             "Account created successfully",
                                             Toast.LENGTH_SHORT).show();
 
-                                    // Go to Login screen (NOT Home)
+                                    // Go to Login screen
                                     Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
                                     startActivity(intent);
-                                    finish(); // Prevent going back to register
+                                    finish();
                                 } else {
                                     Toast.makeText(RegisterActivity.this,
                                             "Registration failed: " + task.getException().getMessage(),
@@ -90,7 +90,7 @@ public class RegisterActivity extends AppCompatActivity {
         // Go to Login
         tvGoToLogin.setOnClickListener(v -> {
             startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-            finish(); // Prevent going back to register
+            finish();
         });
     }
 }

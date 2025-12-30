@@ -11,19 +11,19 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main); // Use the welcome screen layout
+        setContentView(R.layout.activity_main);
 
         Button btnLogin = findViewById(R.id.btnLogin);
         Button btnCreateAccount = findViewById(R.id.btnCreateAccount);
 
         btnLogin.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, LoginActivity.class));
-            finish(); // Optional: remove if you want back button to work
+            finish();
         });
 
         btnCreateAccount.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, RegisterActivity.class));
-            finish(); // Optional: remove if you want back button to work
+            finish();
         });
     }
 }

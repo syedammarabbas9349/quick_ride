@@ -90,7 +90,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="(Google Maps would be here)"
+            android:text="(Google Maps will be here)"
             android:textSize="14sp"
             android:textColor="#999999"
             android:layout_marginTop="8dp"/>
@@ -143,7 +143,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="16dp"/>
 
-        <!-- UberGo Option -->
+        <!-- Simple QuickRide Option -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="70dp"
@@ -169,7 +169,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="UberGo"
+                    android:text="Single Ride"
                     android:textSize="16sp"
                     android:textColor="#000000"
                     android:textStyle="bold"/>
@@ -177,21 +177,14 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Affordable, compact rides"
+                    android:text="Premium ride"
                     android:textSize="12sp"
                     android:textColor="#666666"/>
             </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="₹149"
-                android:textSize="18sp"
-                android:textColor="#000000"
-                android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- UberPremium Option -->
+        <!-- Sharing QuickRide Option -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="70dp"
@@ -217,7 +210,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="UberPremium"
+                    android:text="Sharing Ride"
                     android:textSize="16sp"
                     android:textColor="#000000"
                     android:textStyle="bold"/>
@@ -225,18 +218,11 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Premium rides with top drivers"
+                    android:text="Affordable ride"
                     android:textSize="12sp"
                     android:textColor="#666666"/>
             </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="₹249"
-                android:textSize="18sp"
-                android:textColor="#000000"
-                android:textStyle="bold"/>
         </LinearLayout>
 
         <!-- Book Ride Button -->
@@ -253,7 +239,7 @@
             android:elevation="4dp"/>
     </LinearLayout>
 
-    <!-- Current Location FAB -->
+    <!-- Current Location -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabCurrentLocation"
         android:layout_width="wrap_content"

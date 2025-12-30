@@ -18,7 +18,7 @@ public class HomeActivity extends AppCompatActivity {
 
     TextView tvWelcome;
     Button btnBookRide;
-    ImageView profileIcon, notificationIcon, btnLogout; // Added btnLogout
+    ImageView profileIcon, notificationIcon, btnLogout;
     FloatingActionButton fabCurrentLocation;
 
     FirebaseAuth mAuth;
@@ -27,7 +27,6 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Hide action bar if it exists
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
@@ -51,8 +50,6 @@ public class HomeActivity extends AppCompatActivity {
             String email = user.getEmail();
             String greeting = getGreeting();
 
-            // Show email in welcome text
-            tvWelcome.setText(greeting + "\n" + email);
         }
 
         // Book Ride Button
@@ -70,7 +67,7 @@ public class HomeActivity extends AppCompatActivity {
             Toast.makeText(HomeActivity.this, "Notifications", Toast.LENGTH_SHORT).show();
         });
 
-        // NEW: Logout Button Click
+        // Logout Button Click
         btnLogout.setOnClickListener(v -> {
             // Show confirmation dialog
             new android.app.AlertDialog.Builder(this)
@@ -81,7 +78,7 @@ public class HomeActivity extends AppCompatActivity {
                         mAuth.signOut();
                         Toast.makeText(HomeActivity.this, "Logged out successfully", Toast.LENGTH_SHORT).show();
 
-                        // Go to MainActivity (welcome screen)
+                        // Go to MainActivity
                         Intent intent = new Intent(HomeActivity.this, MainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
@@ -97,12 +94,11 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    // Helper method to get time-based greeting
     private String getGreeting() {
         java.util.Calendar calendar = java.util.Calendar.getInstance();
         int hour = calendar.get(java.util.Calendar.HOUR_OF_DAY);
 
-        if (hour < 12) {
+        if (hour < 12 ) {
             return "Good morning!";
         } else if (hour < 17) {
             return "Good afternoon!";
