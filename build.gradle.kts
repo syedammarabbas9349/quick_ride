@@ -1,7 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+
 plugins {
-    alias(libs.plugins.android.application) apply false
-    alias(libs.plugins.google.gms.google.services) apply false
-    alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin) apply false
+    id("com.android.application") version "8.3.0" apply false
+    id("com.android.library") version "8.3.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+    id("com.google.gms.google-services") version "4.4.0" apply false
+    id("com.onesignal.androidsdk.onesignal-gradle-plugin") version "0.14.0" apply false
 }
 
+tasks.register("clean", Delete::class) {
+    delete(rootProject.buildDir)
+}
