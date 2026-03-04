@@ -8,9 +8,9 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -81,10 +81,12 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Driver Map Activity with simple drawer implementation
+ * Driver Map Activity with RecyclerView for ride requests
  */
 public class DriverMapActivity extends AppCompatActivity
         implements OnMapReadyCallback, RouteHelper.RouteCallback {
+
+    private static final String TAG = "DriverMapActivity";
 
     // Constants
     private static final int MAX_SEARCH_DISTANCE = 20;
@@ -103,7 +105,7 @@ public class DriverMapActivity extends AppCompatActivity
     private Button cancelButton;
     private TextView customerName, pickupAddress, driverNameHeader, driverStatusHeader;
     private LinearLayout customerInfo, bringUpBottomLayout;
-    private CardView bottomSheet;
+    private LinearLayout bottomSheet;
     private RecyclerView requestsRecyclerView;
     private TextView noRequestsText;
 
@@ -152,22 +154,34 @@ public class DriverMapActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_driver_map);
 
-        initializeViews();
-        setupToolbar();
-        setupDrawer();
-        setupFirebase();
-        setupLocation();
-        setupMap();
-        setupRecyclerView();
-        setupBottomSheet();
-        setupListeners();
-        loadDriverData();
-        checkForActiveRide();
+        try {
+            Log.d(TAG, "onCreate started");
+            setContentView(R.layout.activity_driver_map);
+            Log.d(TAG, "Layout inflated successfully");
+
+            initializeViews();
+            setupToolbar();
+            setupDrawer();
+            setupFirebase();
+            setupLocation();
+            setupMap();
+            setupRecyclerView();
+            setupBottomSheet();
+            setupListeners();
+            loadDriverData();
+            checkForActiveRide();
+
+            Log.d(TAG, "onCreate completed successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onCreate", e);
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void initializeViews() {
+        Log.d(TAG, "initializeViews started");
+
         drawer = findViewById(R.id.drawer_layout);
         toolbar = findViewById(R.id.toolbar);
         drawerList = findViewById(R.id.drawer_list);
@@ -186,14 +200,44 @@ public class DriverMapActivity extends AppCompatActivity
         pickupAddress = findViewById(R.id.pickupAddress);
         customerProfileImage = findViewById(R.id.customerProfileImage);
 
-        // Header views
-        View headerView = getLayoutInflater().inflate(R.layout.nav_header_driver, null);
-        driverNameHeader = headerView.findViewById(R.id.driverNameDrawer);
-        driverStatusHeader = headerView.findViewById(R.id.driverStatusDrawer);
+        // Log any null views for debugging
+        if (drawerButton == null) Log.e(TAG, "drawerButton is null - check layout ID");
+        if (workingSwitch == null) Log.e(TAG, "workingSwitch is null - check layout ID");
+        if (rideStatusButton == null) Log.e(TAG, "rideStatusButton is null - check layout ID");
+        if (fabMaps == null) Log.e(TAG, "fabMaps is null - check layout ID");
+        if (fabCall == null) Log.e(TAG, "fabCall is null - check layout ID");
+        if (cancelButton == null) Log.e(TAG, "cancelButton is null - check layout ID");
+        if (customerInfo == null) Log.e(TAG, "customerInfo is null - check layout ID");
+        if (bringUpBottomLayout == null) Log.e(TAG, "bringUpBottomLayout is null - check layout ID");
+        if (bottomSheet == null) Log.e(TAG, "bottomSheet is null - check layout ID");
+        if (requestsRecyclerView == null) Log.e(TAG, "requestsRecyclerView is null - check layout ID");
+        if (noRequestsText == null) Log.e(TAG, "noRequestsText is null - check layout ID");
+        if (customerName == null) Log.e(TAG, "customerName is null - check layout ID");
+        if (pickupAddress == null) Log.e(TAG, "pickupAddress is null - check layout ID");
+        if (customerProfileImage == null) Log.e(TAG, "customerProfileImage is null - check layout ID");
+
+        // Header views will be set in setupDrawer
+        driverNameHeader = null;
+        driverStatusHeader = null;
+
+        Log.d(TAG, "initializeViews completed");
     }
 
     private void setupToolbar() {
+        Log.d(TAG, "setupToolbar started");
+
+        if (toolbar == null) {
+            Log.e(TAG, "toolbar is null, cannot setup toolbar");
+            return;
+        }
+
         setSupportActionBar(toolbar);
+
+        if (drawer == null) {
+            Log.e(TAG, "drawer is null, cannot setup drawer toggle");
+            return;
+        }
+
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar,
                 R.string.navigation_drawer_open,
@@ -201,53 +245,85 @@ public class DriverMapActivity extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        drawerButton.setOnClickListener(v -> drawer.openDrawer(Gravity.LEFT));
+        if (drawerButton != null) {
+            drawerButton.setOnClickListener(v -> {
+                if (drawer != null) {
+                    drawer.openDrawer(Gravity.LEFT);
+                }
+            });
+            Log.d(TAG, "drawerButton click listener set");
+        } else {
+            Log.e(TAG, "drawerButton is null, cannot set click listener");
+            // Fallback: use home button
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
+            }
+        }
+
+        Log.d(TAG, "setupToolbar completed");
     }
 
     private void setupDrawer() {
-        // Get drawer items from resources
-        drawerItems = getResources().getStringArray(R.array.drawer_items_driver);
+        Log.d(TAG, "setupDrawer started");
 
-        // Set up adapter
-        drawerAdapter = new DrawerAdapter(this, drawerItems, drawerIcons);
-        drawerList.setAdapter(drawerAdapter);
+        try {
+            // Get drawer items from resources
+            drawerItems = getResources().getStringArray(R.array.drawer_items_driver);
 
-        // Add header to ListView
-        drawerList.addHeaderView(getLayoutInflater().inflate(R.layout.nav_header_driver, null));
+            // Set up adapter
+            drawerAdapter = new DrawerAdapter(this, drawerItems, drawerIcons);
+            drawerList.setAdapter(drawerAdapter);
 
-        // Set item click listener
-        drawerList.setOnItemClickListener((parent, view, position, id) -> {
-            // Adjust position because of header
-            int actualPosition = position - 1;
+            // Add header to ListView
+            View headerView = getLayoutInflater().inflate(R.layout.nav_header_driver, null);
+            drawerList.addHeaderView(headerView);
 
-            if (actualPosition >= 0) {
-                drawerAdapter.setSelectedPosition(actualPosition);
+            // Get header views
+            driverNameHeader = headerView.findViewById(R.id.driverNameDrawer);
+            driverStatusHeader = headerView.findViewById(R.id.driverStatusDrawer);
 
-                switch (actualPosition) {
-                    case 0: // History
-                        startActivity(new Intent(this, HistoryActivity.class)
-                                .putExtra("userType", "Drivers"));
-                        break;
-                    case 1: // Earnings
-                        Toast.makeText(this, "Earnings clicked", Toast.LENGTH_SHORT).show();
-                        break;
-                    case 2: // Payout
-                        startActivity(new Intent(this, PayoutActivity.class));
-                        break;
-                    case 3: // Settings
-                        startActivity(new Intent(this, DriverSettingsActivity.class));
-                        break;
-                    case 4: // Help
-                        Toast.makeText(this, "Help clicked", Toast.LENGTH_SHORT).show();
-                        break;
-                    case 5: // Logout
-                        showLogoutDialog();
-                        break;
+            if (driverNameHeader == null) Log.e(TAG, "driverNameHeader is null");
+            if (driverStatusHeader == null) Log.e(TAG, "driverStatusHeader is null");
+
+            // Set item click listener
+            drawerList.setOnItemClickListener((parent, view, position, id) -> {
+                // Adjust position because of header
+                int actualPosition = position - 1;
+
+                if (actualPosition >= 0) {
+                    drawerAdapter.setSelectedPosition(actualPosition);
+
+                    switch (actualPosition) {
+                        case 0: // History
+                            startActivity(new Intent(this, HistoryActivity.class)
+                                    .putExtra("userType", "Drivers"));
+                            break;
+                        case 1: // Earnings
+                            Toast.makeText(this, "Earnings clicked", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 2: // Payout
+                            startActivity(new Intent(this, PayoutActivity.class));
+                            break;
+                        case 3: // Settings
+                            startActivity(new Intent(this, DriverSettingsActivity.class));
+                            break;
+                        case 4: // Help
+                            Toast.makeText(this, "Help clicked", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 5: // Logout
+                            showLogoutDialog();
+                            break;
+                    }
                 }
-            }
 
-            drawer.closeDrawer(GravityCompat.START);
-        });
+                drawer.closeDrawer(GravityCompat.START);
+            });
+
+            Log.d(TAG, "setupDrawer completed");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in setupDrawer", e);
+        }
     }
 
     private void showLogoutDialog() {
@@ -260,44 +336,68 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void setupFirebase() {
-        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        driverRef = FirebaseDatabase.getInstance()
-                .getReference()
-                .child("Users")
-                .child("Drivers")
-                .child(driverId);
+        Log.d(TAG, "setupFirebase started");
 
-        rideInfoRef = FirebaseDatabase.getInstance().getReference().child("ride_info");
-        geoFireWorking = new GeoFire(FirebaseDatabase.getInstance().getReference("driversWorking"));
+        try {
+            String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            driverRef = FirebaseDatabase.getInstance()
+                    .getReference()
+                    .child("Users")
+                    .child("Drivers")
+                    .child(driverId);
 
-        currentDriver = new User();
-        currentDriver.setId(driverId);
-        currentDriver.setUserType("driver");
+            rideInfoRef = FirebaseDatabase.getInstance().getReference().child("ride_info");
+            geoFireWorking = new GeoFire(FirebaseDatabase.getInstance().getReference("driversWorking"));
 
-        routeHelper = new RouteHelper(this, getString(R.string.google_maps_key));
-        routeHelper.setCallback(this);
-        notificationHelper = NotificationHelper.getInstance(this);
+            currentDriver = new User();
+            currentDriver.setId(driverId);
+            currentDriver.setUserType("driver");
+
+            routeHelper = new RouteHelper(this, getString(R.string.google_maps_key));
+            routeHelper.setCallback(this);
+            notificationHelper = NotificationHelper.getInstance(this);
+
+            Log.d(TAG, "setupFirebase completed");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in setupFirebase", e);
+        }
     }
 
     private void setupLocation() {
+        Log.d(TAG, "setupLocation started");
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         locationRequest = LocationRequest.create();
         locationRequest.setInterval(5000);
         locationRequest.setFastestInterval(2000);
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+
+        Log.d(TAG, "setupLocation completed");
     }
 
     private void setupMap() {
+        Log.d(TAG, "setupMap started");
+
         SupportMapFragment mapFragment = (SupportMapFragment)
                 getSupportFragmentManager().findFragmentById(R.id.map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
+            Log.d(TAG, "MapFragment found, getMapAsync called");
+        } else {
+            Log.e(TAG, "MapFragment is null");
         }
     }
 
     private void setupRecyclerView() {
-        requestAdapter = new RideRequestAdapter(requestList, new RideRequestAdapter.OnRequestActionListener() {
+        Log.d(TAG, "setupRecyclerView started");
+
+        if (requestsRecyclerView == null) {
+            Log.e(TAG, "requestsRecyclerView is null, cannot setup");
+            return;
+        }
+
+        requestAdapter = new CardRequestAdapter(requestList, new CardRequestAdapter.OnRequestActionListener() {
             @Override
             public void onAccept(RideRequest request, int position) {
                 acceptRide(request);
@@ -307,85 +407,122 @@ public class DriverMapActivity extends AppCompatActivity
             public void onDecline(RideRequest request, int position) {
                 requestList.remove(position);
                 requestAdapter.notifyItemRemoved(position);
-                if (requestList.isEmpty()) {
-                    noRequestsText.setVisibility(View.VISIBLE);
-                    requestsRecyclerView.setVisibility(View.GONE);
-                }
+                updateRequestsVisibility();
             }
         });
 
         requestsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         requestsRecyclerView.setAdapter(requestAdapter);
+
+        Log.d(TAG, "setupRecyclerView completed");
+    }
+
+    private void updateRequestsVisibility() {
+        if (requestList.isEmpty()) {
+            if (noRequestsText != null) noRequestsText.setVisibility(View.VISIBLE);
+            if (requestsRecyclerView != null) requestsRecyclerView.setVisibility(View.GONE);
+        } else {
+            if (noRequestsText != null) noRequestsText.setVisibility(View.GONE);
+            if (requestsRecyclerView != null) requestsRecyclerView.setVisibility(View.VISIBLE);
+        }
     }
 
     private void setupBottomSheet() {
+        Log.d(TAG, "setupBottomSheet started");
+
+        if (bottomSheet == null) {
+            Log.e(TAG, "bottomSheet is null, cannot setup");
+            return;
+        }
+
         bottomSheetView = findViewById(R.id.bottomSheet);
-        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetView);
-        bottomSheetBehavior.setHideable(true);
-        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
 
-        bringUpBottomLayout.setOnClickListener(v -> {
-            if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
-                bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-            } else {
-                bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-            }
-        });
+        try {
+            bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetView);
+            bottomSheetBehavior.setHideable(true);
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating BottomSheetBehavior", e);
+        }
 
-        bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
-            @Override
-            public void onStateChanged(@NonNull View bottomSheet, int newState) {
-                if (currentRide == null) {
-                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        if (bringUpBottomLayout != null) {
+            bringUpBottomLayout.setOnClickListener(v -> {
+                if (bottomSheetBehavior != null) {
+                    if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
+                        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                    } else {
+                        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                    }
                 }
-            }
+            });
+        }
 
-            @Override
-            public void onSlide(@NonNull View bottomSheet, float slideOffset) {}
-        });
+        if (bottomSheetBehavior != null) {
+            bottomSheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+                @Override
+                public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                    if (currentRide == null) {
+                        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+                    }
+                }
+
+                @Override
+                public void onSlide(@NonNull View bottomSheet, float slideOffset) {}
+            });
+        }
+
+        Log.d(TAG, "setupBottomSheet completed");
     }
 
     private void setupListeners() {
-        workingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                goOnline();
-            } else {
-                goOffline();
-            }
-        });
+        Log.d(TAG, "setupListeners started");
 
-        rideStatusButton.setOnClickListener(v -> {
-            if (currentRide == null) return;
+        if (workingSwitch != null) {
+            workingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    goOnline();
+                } else {
+                    goOffline();
+                }
+            });
+        }
 
-            switch (currentRide.getStatus()) {
-                case "accepted":
-                    currentRide.setStatus("arrived");
-                    updateRideStatus("arrived");
-                    rideStatusButton.setText(R.string.start_ride);
-                    break;
-                case "arrived":
-                    currentRide.setStatus("started");
-                    updateRideStatus("started");
-                    rideStatusButton.setText(R.string.complete_ride);
-                    break;
-                case "started":
-                    completeRide();
-                    break;
-            }
-        });
+        if (rideStatusButton != null) {
+            rideStatusButton.setOnClickListener(v -> {
+                if (currentRide == null) return;
 
-        fabMaps.setOnClickListener(v -> openMaps());
-        fabCall.setOnClickListener(v -> callCustomer());
-        cancelButton.setOnClickListener(v -> showCancelDialog());
+                switch (currentRide.getStatus()) {
+                    case "accepted":
+                        currentRide.setStatus("arrived");
+                        updateRideStatus("arrived");
+                        rideStatusButton.setText(R.string.start_ride);
+                        break;
+                    case "arrived":
+                        currentRide.setStatus("started");
+                        updateRideStatus("started");
+                        rideStatusButton.setText(R.string.complete_ride);
+                        break;
+                    case "started":
+                        completeRide();
+                        break;
+                }
+            });
+        }
+
+        if (fabMaps != null) fabMaps.setOnClickListener(v -> openMaps());
+        if (fabCall != null) fabCall.setOnClickListener(v -> callCustomer());
+        if (cancelButton != null) cancelButton.setOnClickListener(v -> showCancelDialog());
+
+        Log.d(TAG, "setupListeners completed");
     }
 
     private void goOnline() {
         if (!checkLocationPermission()) {
-            workingSwitch.setChecked(false);
+            if (workingSwitch != null) workingSwitch.setChecked(false);
             return;
         }
 
-        workingSwitch.setChecked(true);
+        if (workingSwitch != null) workingSwitch.setChecked(true);
         startLocationUpdates();
 
         if (mMap != null) {
@@ -397,11 +534,13 @@ public class DriverMapActivity extends AppCompatActivity
         if (driverStatusHeader != null) {
             driverStatusHeader.setText(R.string.online);
         }
-        Snackbar.make(drawer, R.string.you_are_online, Snackbar.LENGTH_SHORT).show();
+        if (drawer != null) {
+            Snackbar.make(drawer, R.string.you_are_online, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     private void goOffline() {
-        workingSwitch.setChecked(false);
+        if (workingSwitch != null) workingSwitch.setChecked(false);
         stopLocationUpdates();
 
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -410,7 +549,9 @@ public class DriverMapActivity extends AppCompatActivity
         if (driverStatusHeader != null) {
             driverStatusHeader.setText(R.string.offline);
         }
-        Snackbar.make(drawer, R.string.you_are_offline, Snackbar.LENGTH_SHORT).show();
+        if (drawer != null) {
+            Snackbar.make(drawer, R.string.you_are_offline, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     private void startLocationUpdates() {
@@ -419,11 +560,13 @@ public class DriverMapActivity extends AppCompatActivity
             return;
         }
 
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
+        if (fusedLocationClient != null && locationRequest != null) {
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
+        }
     }
 
     private void stopLocationUpdates() {
-        if (fusedLocationClient != null) {
+        if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
         }
     }
@@ -437,7 +580,7 @@ public class DriverMapActivity extends AppCompatActivity
                 lastLocation = location;
 
                 // Update driver location in Firebase
-                if (workingSwitch.isChecked()) {
+                if (workingSwitch != null && workingSwitch.isChecked()) {
                     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     geoFireWorking.setLocation(userId,
                             new GeoLocation(location.getLatitude(), location.getLongitude()));
@@ -445,18 +588,18 @@ public class DriverMapActivity extends AppCompatActivity
                     // Update last updated timestamp
                     Map<String, Object> updates = new HashMap<>();
                     updates.put("last_updated", ServerValue.TIMESTAMP);
-                    driverRef.updateChildren(updates);
+                    if (driverRef != null) driverRef.updateChildren(updates);
                 }
 
                 // Update map camera if needed
-                if (!zoomUpdated) {
+                if (!zoomUpdated && mMap != null) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                             new LatLng(location.getLatitude(), location.getLongitude()), 16));
                     zoomUpdated = true;
                 }
 
                 // Start searching for requests
-                if (!started && workingSwitch.isChecked()) {
+                if (!started && workingSwitch != null && workingSwitch.isChecked()) {
                     searchForRequests();
                     started = true;
                 }
@@ -483,11 +626,11 @@ public class DriverMapActivity extends AppCompatActivity
         geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
-                if (!workingSwitch.isChecked() || currentRide != null) return;
+                if (workingSwitch == null || !workingSwitch.isChecked() || currentRide != null) return;
 
                 // Check if request already in list
                 for (RideRequest ride : requestList) {
-                    if (ride.getRequestId().equals(key)) return;
+                    if (ride.getRideId() != null && ride.getRideId().equals(key)) return;
                 }
 
                 fetchRequestDetails(key);
@@ -508,6 +651,8 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void fetchRequestDetails(String requestId) {
+        if (rideInfoRef == null) return;
+
         rideInfoRef.child(requestId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -517,19 +662,19 @@ public class DriverMapActivity extends AppCompatActivity
                 if (request == null) return;
 
                 // Check if vehicle type matches
-                if (!request.getVehicleType().equals(currentDriver.getVehicleType())) return;
+                if (currentDriver == null || !request.getVehicleType().equals(currentDriver.getVehicleType())) return;
 
                 // Check if request is still pending
                 if (!"pending".equals(request.getStatus())) return;
 
-                request.setRequestId(requestId);
+                request.setRideId(requestId);
                 requestList.add(request);
-                requestAdapter.notifyItemInserted(requestList.size() - 1);
-
-                if (noRequestsText != null) {
-                    noRequestsText.setVisibility(View.GONE);
-                    requestsRecyclerView.setVisibility(View.VISIBLE);
+                if (requestAdapter != null) {
+                    requestAdapter.notifyItemInserted(requestList.size() - 1);
                 }
+
+                // Show/hide empty state
+                updateRequestsVisibility();
 
                 // Play notification sound
                 playNotificationSound();
@@ -550,32 +695,39 @@ public class DriverMapActivity extends AppCompatActivity
 
     private void acceptRide(RideRequest request) {
         currentRide = request;
-        currentRide.setDriverId(currentDriver.getId());
-        currentRide.setDriverName(currentDriver.getName());
-        currentRide.setDriverPhone(currentDriver.getPhone());
+        if (currentDriver != null) {
+            currentRide.setDriverId(currentDriver.getId());
+            currentRide.setDriverName(currentDriver.getName());
+            currentRide.setDriverPhone(currentDriver.getPhone());
+        }
         currentRide.setStatus("accepted");
-        currentRide.setAcceptedTime(System.currentTimeMillis());
+        currentRide.setAcceptedAt(System.currentTimeMillis());
 
         // Update in Firebase
         Map<String, Object> updates = new HashMap<>();
-        updates.put("driverId", currentDriver.getId());
-        updates.put("driverName", currentDriver.getName());
-        updates.put("driverPhone", currentDriver.getPhone());
+        if (currentDriver != null) {
+            updates.put("driverId", currentDriver.getId());
+            updates.put("driverName", currentDriver.getName());
+            updates.put("driverPhone", currentDriver.getPhone());
+        }
         updates.put("status", "accepted");
         updates.put("acceptedTime", System.currentTimeMillis());
 
-        rideInfoRef.child(request.getRequestId()).updateChildren(updates);
+        if (rideInfoRef != null && request.getRideId() != null) {
+            rideInfoRef.child(request.getRideId()).updateChildren(updates);
+        }
 
         // Update driver's current ride
-        driverRef.child("currentRideId").setValue(request.getRequestId());
+        if (driverRef != null && request.getRideId() != null) {
+            driverRef.child("currentRideId").setValue(request.getRideId());
+        }
 
         // Clear request list
         requestList.clear();
-        requestAdapter.notifyDataSetChanged();
-        if (noRequestsText != null) {
-            noRequestsText.setVisibility(View.VISIBLE);
-            requestsRecyclerView.setVisibility(View.GONE);
+        if (requestAdapter != null) {
+            requestAdapter.notifyDataSetChanged();
         }
+        updateRequestsVisibility();
 
         // Show customer info
         showCustomerInfo();
@@ -590,12 +742,13 @@ public class DriverMapActivity extends AppCompatActivity
     private void showCustomerInfo() {
         if (currentRide == null) return;
 
-        customerInfo.setVisibility(View.VISIBLE);
-        customerName.setText(currentRide.getCustomerName());
-        pickupAddress.setText(currentRide.getPickupAddress());
+        if (customerInfo != null) customerInfo.setVisibility(View.VISIBLE);
+        if (customerName != null) customerName.setText(currentRide.getCustomerName());
+        if (pickupAddress != null) pickupAddress.setText(currentRide.getPickupAddress());
 
         // Load customer image if available
-        if (currentRide.getCustomerImageUrl() != null &&
+        if (customerProfileImage != null &&
+                currentRide.getCustomerImageUrl() != null &&
                 !currentRide.getCustomerImageUrl().isEmpty()) {
             Glide.with(this)
                     .load(currentRide.getCustomerImageUrl())
@@ -605,14 +758,16 @@ public class DriverMapActivity extends AppCompatActivity
                     .into(customerProfileImage);
         }
 
-        bottomSheetBehavior.setHideable(false);
-        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        if (bottomSheetBehavior != null) {
+            bottomSheetBehavior.setHideable(false);
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        }
     }
 
     private void listenForRideUpdates() {
-        if (currentRide == null) return;
+        if (currentRide == null || rideInfoRef == null || currentRide.getRideId() == null) return;
 
-        rideStatusListener = rideInfoRef.child(currentRide.getRequestId())
+        rideStatusListener = rideInfoRef.child(currentRide.getRideId())
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -621,7 +776,9 @@ public class DriverMapActivity extends AppCompatActivity
                         String status = snapshot.child("status").getValue(String.class);
                         if (status == null) return;
 
-                        currentRide.setStatus(status);
+                        if (currentRide != null) {
+                            currentRide.setStatus(status);
+                        }
 
                         switch (status) {
                             case "cancelled":
@@ -629,7 +786,9 @@ public class DriverMapActivity extends AppCompatActivity
                                 endRide();
                                 break;
                             case "started":
-                                rideStatusButton.setText(R.string.complete_ride);
+                                if (rideStatusButton != null) {
+                                    rideStatusButton.setText(R.string.complete_ride);
+                                }
                                 break;
                         }
                     }
@@ -640,7 +799,7 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void calculateRouteToPickup() {
-        if (lastLocation == null || currentRide == null) return;
+        if (lastLocation == null || currentRide == null || routeHelper == null) return;
 
         LatLng origin = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
         LatLng destination = new LatLng(
@@ -651,7 +810,7 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void calculateRouteToDestination() {
-        if (lastLocation == null || currentRide == null) return;
+        if (lastLocation == null || currentRide == null || routeHelper == null) return;
 
         LatLng origin = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
         LatLng destination = new LatLng(
@@ -662,7 +821,7 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void updateRideStatus(String status) {
-        if (currentRide == null) return;
+        if (currentRide == null || rideInfoRef == null || currentRide.getRideId() == null) return;
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", status);
@@ -677,11 +836,12 @@ public class DriverMapActivity extends AppCompatActivity
                 break;
         }
 
-        rideInfoRef.child(currentRide.getRequestId()).updateChildren(updates);
+        rideInfoRef.child(currentRide.getRideId()).updateChildren(updates);
     }
 
     private void updateRideDistance(Location newLocation) {
-        if (lastLocation == null || currentRide == null) return;
+        if (lastLocation == null || currentRide == null || rideInfoRef == null ||
+                currentRide.getRideId() == null) return;
 
         float distanceDelta = lastLocation.distanceTo(newLocation) / 1000; // in km
         double totalDistance = currentRide.getDistance() + distanceDelta;
@@ -689,11 +849,11 @@ public class DriverMapActivity extends AppCompatActivity
         Map<String, Object> updates = new HashMap<>();
         updates.put("distance", totalDistance);
 
-        rideInfoRef.child(currentRide.getRequestId()).updateChildren(updates);
+        rideInfoRef.child(currentRide.getRideId()).updateChildren(updates);
     }
 
     private void completeRide() {
-        if (currentRide == null) return;
+        if (currentRide == null || rideInfoRef == null || currentRide.getRideId() == null) return;
 
         double fare = calculateFare(currentRide.getDistance());
 
@@ -702,7 +862,7 @@ public class DriverMapActivity extends AppCompatActivity
         updates.put("completedTime", System.currentTimeMillis());
         updates.put("fare", fare);
 
-        rideInfoRef.child(currentRide.getRequestId()).updateChildren(updates);
+        rideInfoRef.child(currentRide.getRideId()).updateChildren(updates);
 
         // Update driver earnings
         updateDriverEarnings(fare);
@@ -718,6 +878,8 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void updateDriverEarnings(double fare) {
+        if (driverRef == null) return;
+
         driverRef.child("earnings").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -748,24 +910,27 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void cancelRide() {
-        if (currentRide == null) return;
+        if (currentRide == null || rideInfoRef == null || currentRide.getRideId() == null) return;
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", "cancelled");
         updates.put("cancelledTime", System.currentTimeMillis());
         updates.put("cancelledBy", "driver");
 
-        rideInfoRef.child(currentRide.getRequestId()).updateChildren(updates);
+        rideInfoRef.child(currentRide.getRideId()).updateChildren(updates);
         endRide();
     }
 
     private void endRide() {
-        if (rideStatusListener != null && currentRide != null) {
-            rideInfoRef.child(currentRide.getRequestId()).removeEventListener(rideStatusListener);
+        if (rideStatusListener != null && currentRide != null && rideInfoRef != null &&
+                currentRide.getRideId() != null) {
+            rideInfoRef.child(currentRide.getRideId()).removeEventListener(rideStatusListener);
         }
 
         // Clear driver's current ride
-        driverRef.child("currentRideId").removeValue();
+        if (driverRef != null) {
+            driverRef.child("currentRideId").removeValue();
+        }
 
         // Remove markers
         if (pickupMarker != null) pickupMarker.remove();
@@ -779,17 +944,21 @@ public class DriverMapActivity extends AppCompatActivity
 
         // Reset UI
         currentRide = null;
-        customerInfo.setVisibility(View.GONE);
-        bottomSheetBehavior.setHideable(true);
-        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
-        rideStatusButton.setText(R.string.pickup_customer);
+        if (customerInfo != null) customerInfo.setVisibility(View.GONE);
+        if (bottomSheetBehavior != null) {
+            bottomSheetBehavior.setHideable(true);
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        }
+        if (rideStatusButton != null) {
+            rideStatusButton.setText(R.string.pickup_customer);
+        }
 
         // Clear map and restart search
-        mMap.clear();
+        if (mMap != null) mMap.clear();
         zoomUpdated = false;
         started = false;
 
-        if (workingSwitch.isChecked()) {
+        if (workingSwitch != null && workingSwitch.isChecked()) {
             searchForRequests();
         }
     }
@@ -834,26 +1003,32 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void loadDriverData() {
+        if (driverRef == null) return;
+
         driverRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.exists()) return;
 
-                currentDriver.setName(snapshot.child("name").getValue(String.class));
-                currentDriver.setPhone(snapshot.child("phone").getValue(String.class));
-                currentDriver.setCar(snapshot.child("car").getValue(String.class));
-                currentDriver.setVehicleType(snapshot.child("vehicleType").getValue(String.class));
+                if (currentDriver != null) {
+                    currentDriver.setName(snapshot.child("name").getValue(String.class));
+                    currentDriver.setPhone(snapshot.child("phone").getValue(String.class));
+                    currentDriver.setCar(snapshot.child("car").getValue(String.class));
+                    currentDriver.setVehicleType(snapshot.child("vehicleType").getValue(String.class));
 
-                Boolean active = snapshot.child("active").getValue(Boolean.class);
-                if (active != null && !active) {
-                    workingSwitch.setChecked(false);
-                    workingSwitch.setEnabled(false);
-                    Toast.makeText(DriverMapActivity.this,
-                            R.string.not_approved, Toast.LENGTH_LONG).show();
-                }
+                    Boolean active = snapshot.child("active").getValue(Boolean.class);
+                    if (active != null && !active) {
+                        if (workingSwitch != null) {
+                            workingSwitch.setChecked(false);
+                            workingSwitch.setEnabled(false);
+                        }
+                        Toast.makeText(DriverMapActivity.this,
+                                R.string.not_approved, Toast.LENGTH_LONG).show();
+                    }
 
-                if (driverNameHeader != null) {
-                    driverNameHeader.setText(currentDriver.getName());
+                    if (driverNameHeader != null) {
+                        driverNameHeader.setText(currentDriver.getName());
+                    }
                 }
             }
 
@@ -863,11 +1038,13 @@ public class DriverMapActivity extends AppCompatActivity
     }
 
     private void checkForActiveRide() {
+        if (driverRef == null) return;
+
         driverRef.child("currentRideId").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 String rideId = snapshot.getValue(String.class);
-                if (rideId == null || rideId.isEmpty()) return;
+                if (rideId == null || rideId.isEmpty() || rideInfoRef == null) return;
 
                 rideInfoRef.child(rideId).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
@@ -877,7 +1054,7 @@ public class DriverMapActivity extends AppCompatActivity
                         currentRide = dataSnapshot.getValue(RideRequest.class);
                         if (currentRide == null) return;
 
-                        currentRide.setRequestId(rideId);
+                        currentRide.setRideId(rideId);
 
                         String status = currentRide.getStatus();
                         if ("accepted".equals(status) || "started".equals(status)) {
@@ -921,12 +1098,12 @@ public class DriverMapActivity extends AppCompatActivity
 
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (workingSwitch.isChecked()) {
+                if (workingSwitch != null && workingSwitch.isChecked()) {
                     startLocationUpdates();
                 }
             } else {
                 Toast.makeText(this, R.string.location_permission_required, Toast.LENGTH_LONG).show();
-                workingSwitch.setChecked(false);
+                if (workingSwitch != null) workingSwitch.setChecked(false);
             }
         }
     }
@@ -934,13 +1111,7 @@ public class DriverMapActivity extends AppCompatActivity
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
-
-        // Apply custom map style (optional)
-        try {
-            mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style));
-        } catch (Exception e) {
-            // Use default style
-        }
+        Log.d(TAG, "Map is ready");
 
         if (checkLocationPermission()) {
             mMap.setMyLocationEnabled(true);
@@ -949,6 +1120,8 @@ public class DriverMapActivity extends AppCompatActivity
 
     @Override
     public void onRouteSuccess(ArrayList<LatLng> path, double distance, int duration) {
+        if (mMap == null) return;
+
         // Clear old polylines
         for (Polyline polyline : polylines) {
             polyline.remove();
@@ -993,7 +1166,10 @@ public class DriverMapActivity extends AppCompatActivity
 
     @Override
     public void onRouteFailure(String error) {
-        Snackbar.make(drawer, "Route error: " + error, Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Route failure: " + error);
+        if (drawer != null) {
+            Snackbar.make(drawer, "Route error: " + error, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     private void logout() {
@@ -1007,7 +1183,7 @@ public class DriverMapActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
+        if (drawer != null && drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
@@ -1019,12 +1195,15 @@ public class DriverMapActivity extends AppCompatActivity
         super.onDestroy();
         stopLocationUpdates();
 
-        if (rideStatusListener != null && currentRide != null) {
-            rideInfoRef.child(currentRide.getRequestId()).removeEventListener(rideStatusListener);
+        if (rideStatusListener != null && currentRide != null && rideInfoRef != null &&
+                currentRide.getRideId() != null) {
+            rideInfoRef.child(currentRide.getRideId()).removeEventListener(rideStatusListener);
         }
 
         if (geoQuery != null) {
             geoQuery.removeAllListeners();
         }
+
+        Log.d(TAG, "onDestroy completed");
     }
 }

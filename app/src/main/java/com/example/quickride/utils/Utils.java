@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
 import android.text.TextUtils;
-import android.text.format.DateFormat;
+
 
 import com.example.quickride.R;
 import com.example.quickride.models.ServiceType;
@@ -15,12 +15,11 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
+
 
 /**
  * Utility class with helper methods for the entire app

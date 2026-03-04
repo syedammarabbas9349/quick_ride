@@ -1,6 +1,7 @@
 package com.example.quickride.history;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -24,6 +25,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,15 +81,10 @@ public class HistoryActivity extends AppCompatActivity {
             @Override
             public void onItemClick(RideHistory ride, int position) {
                 // Open history detail
-                HistorySingleActivity.start(HistoryActivity.this, ride.getRideId(), userType);
-            }
-
-            @Override
-            public void onContactDriver(RideHistory ride, int position) {
-                // Contact driver (call or message)
-                if (ride.getDriverPhone() != null) {
-                    // Implement call intent
-                }
+                Intent intent = new Intent(HistoryActivity.this, HistorySingleActivity.class);
+                intent.putExtra("rideId", ride.getRideId());
+                intent.putExtra("userType", userType);
+                startActivity(intent);
             }
         });
 

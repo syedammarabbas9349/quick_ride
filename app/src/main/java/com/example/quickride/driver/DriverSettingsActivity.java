@@ -240,21 +240,75 @@ public class DriverSettingsActivity extends AppCompatActivity {
     }
 
     private void setupPayoutRecyclerView() {
-        payoutAdapter = new PayoutAdapter(payoutList, new PayoutAdapter.OnPayoutClickListener() {
+        RecyclerView payoutRecyclerView = findViewById(R.id.payoutRecyclerView);
+        List<Payout> payoutList = new ArrayList<>();
+
+        // Sample data - replace with Firebase data
+        Payout payout1 = new Payout();
+        payout1.setPeriod("Week 12, 2024");
+        payout1.setAmount(12500.0);
+        payout1.setRideCount(25);
+        payout1.setStatus("available");
+        payout1.setRequestedAt(System.currentTimeMillis() - 86400000);
+        payoutList.add(payout1);
+
+        Payout payout2 = new Payout();
+        payout2.setPeriod("Week 11, 2024");
+        payout2.setAmount(10800.0);
+        payout2.setRideCount(22);
+        payout2.setStatus("pending");
+        payout2.setRequestedAt(System.currentTimeMillis() - 172800000);
+        payoutList.add(payout2);
+
+        Payout payout3 = new Payout();
+        payout3.setPeriod("Week 10, 2024");
+        payout3.setAmount(9500.0);
+        payout3.setRideCount(19);
+        payout3.setStatus("paid");
+        payout3.setRequestedAt(System.currentTimeMillis() - 604800000);
+        payoutList.add(payout3);
+
+        PayoutAdapter adapter = new PayoutAdapter(payoutList, this, new PayoutAdapter.OnItemClickListener() {
             @Override
-            public void onPayoutClick(Payout payout, int position) {
-                showPayoutDetailsDialog(payout);
+            public void onItemClick(Payout payout, int position) {
+                // Handle item click
+                showPayoutDetails(payout);
             }
 
             @Override
-            public void onRequestWithdraw(Payout payout) {
-                // Check payment methods before withdrawal
-                checkPaymentMethods(payout);
+            public void onWithdrawClick(Payout payout, int position) {
+                // Handle withdraw button click
+                showWithdrawDialog(payout, position);
             }
         });
 
         payoutRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        payoutRecyclerView.setAdapter(payoutAdapter);
+        payoutRecyclerView.setAdapter(adapter);
+    }
+
+    private void showPayoutDetails(Payout payout) {
+        new AlertDialog.Builder(this)
+                .setTitle("Payout Details")
+                .setMessage(
+                        "Period: " + payout.getPeriod() + "\n" +
+                                "Amount: Rs. " + payout.getAmount() + "\n" +
+                                "Rides: " + payout.getRideCount() + "\n" +
+                                "Status: " + payout.getStatus()
+                )
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    private void showWithdrawDialog(Payout payout, int position) {
+        new AlertDialog.Builder(this)
+                .setTitle("Withdraw Earnings")
+                .setMessage("Request withdrawal of Rs. " + payout.getAmount() + "?")
+                .setPositiveButton("Confirm", (dialog, which) -> {
+                    // Update payout status in Firebase
+                    Toast.makeText(this, "Withdrawal requested for Rs. " + payout.getAmount(), Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void loadPayoutHistoryFromFirebase() {
@@ -279,10 +333,6 @@ public class DriverSettingsActivity extends AppCompatActivity {
                 payoutAdapter.notifyDataSetChanged();
                 mProgressBar.setVisibility(View.GONE);
 
-                // If no payouts exist, create sample data for new drivers
-                if (payoutList.isEmpty()) {
-                    createSamplePayoutData();
-                }
             }
 
             @Override
@@ -390,34 +440,8 @@ public class DriverSettingsActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void createSamplePayoutData() {
-        // Create sample payouts for new drivers (optional)
-        List<Payout> samplePayouts = new ArrayList<>();
 
-        Payout payout1 = new Payout(userID, "Week 12, 2024", 12500.0, 25);
-        payout1.setStatus("available");
-        payout1.setRequestedAt(System.currentTimeMillis() - 86400000);
-        samplePayouts.add(payout1);
 
-        Payout payout2 = new Payout(userID, "Week 11, 2024", 10800.0, 22);
-        payout2.setStatus("pending");
-        payout2.setRequestedAt(System.currentTimeMillis() - 172800000);
-        samplePayouts.add(payout2);
-
-        Payout payout3 = new Payout(userID, "Week 10, 2024", 9500.0, 19);
-        payout3.setStatus("paid");
-        payout3.setRequestedAt(System.currentTimeMillis() - 604800000);
-        samplePayouts.add(payout3);
-
-        // Save to Firebase
-        for (Payout payout : samplePayouts) {
-            String payoutId = mPayoutDatabase.push().getKey();
-            if (payoutId != null) {
-                payout.setPayoutId(payoutId);
-                mPayoutDatabase.child(payoutId).setValue(payout);
-            }
-        }
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

@@ -3,90 +3,59 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.quickride">
 
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <uses-feature
-        android:glEsVersion="0x00020000"
-        android:required="true" />
-    <uses-feature android:name="android.hardware.screen.portrait" />
-    <uses-feature
-        android:name="android.hardware.telephony"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
-        android:name=".ApplicationClass"
-        android:allowBackup="false"
-        android:icon="@mipmap/ic_main"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_main"
-        android:theme="@style/AppTheme.NoActionBar"
-        tools:ignore="GoogleAppIndexingWarning">
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <!-- Launcher Activity -->
         <activity
             android:name=".auth.LauncherActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:theme="@style/AppTheme.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".payment.PayoutActivity"
-            android:exported="false" />
-        <activity
-            android:name=".auth.DetailsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".auth.AuthenticationActivity"
-            android:exported="false" />
-        <activity
-            android:name=".payment.AddPaymentActivity"
-            android:exported="false" />
-        <activity
-            android:name=".payment.PaymentActivity"
-            android:exported="false" />
-        <activity
-            android:name=".history.HistorySingleActivity"
-            android:exported="false" />
-        <activity
-            android:name=".history.HistoryActivity"
-            android:exported="false" />
-        <activity
-            android:name=".driver.DriverChooseTypeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".customer.CustomerMapActivity"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".customer.CustomerSettingsActivity"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".driver.DriverMapActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".driver.DriverSettingsActivity"
-            android:screenOrientation="portrait" />
 
+        <!-- Auth Activities -->
+        <activity android:name=".auth.AuthenticationActivity" />
+        <activity android:name=".auth.DetailsActivity" />
+
+        <!-- Customer Activities -->
+        <activity android:name=".customer.CustomerMapActivity" />
+        <activity android:name=".customer.CustomerSettingsActivity" />
+
+        <!-- Driver Activities -->
+        <activity android:name=".driver.DriverMapActivity" />
+        <activity android:name=".driver.DriverSettingsActivity" />
+        <activity android:name=".driver.DriverChooseTypeActivity" />
+
+        <!-- History Activities -->
+        <activity android:name=".history.HistoryActivity" />
+        <activity android:name=".history.HistorySingleActivity" />
+
+        <!-- Payment Activities -->
+        <activity android:name=".payment.PaymentActivity" />
+        <activity android:name=".payment.AddPaymentActivity" />
+        <activity android:name=".payment.PayoutActivity" />
+
+        <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-        <uses-library
-            android:name="org.apache.http.legacy"
-            android:required="false" />
-        <uses-library android:name="com.google.android.maps" />
     </application>
 
 </manifest>

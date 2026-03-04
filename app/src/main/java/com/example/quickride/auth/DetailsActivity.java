@@ -4,38 +4,31 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.quickride.R;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.progressindicator.CircularProgressIndicator;
-import com.google.android.material.radiobutton.MaterialRadioButton;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Activity for collecting additional user details after registration
- * Allows user to choose role: Driver or Customer
- */
-public class DetailsActivity extends AppCompatActivity implements View.OnClickListener {
+public class DetailsActivity extends AppCompatActivity {
 
-    private TextInputLayout tilName;
-    private TextInputEditText etName;
-    private MaterialRadioButton rbDriver, rbCustomer;
-    private MaterialButton btnRegister;
-    private CircularProgressIndicator progressBar;
+    private EditText etName;
+    private RadioGroup radioGroup;
+    private RadioButton rbDriver, rbCustomer;
+    private Button btnContinue;
+    private ProgressBar progressBar;
     private Toolbar toolbar;
-
-    private FirebaseAuth mAuth;
-    private String userType = "Customers"; // Default to Customer
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,93 +37,52 @@ public class DetailsActivity extends AppCompatActivity implements View.OnClickLi
 
         initializeViews();
         setupToolbar();
-        setupFirebase();
         setupListeners();
     }
 
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar);
-        tilName = findViewById(R.id.tilName);
         etName = findViewById(R.id.etName);
+        radioGroup = findViewById(R.id.radioGroup);
         rbDriver = findViewById(R.id.rbDriver);
         rbCustomer = findViewById(R.id.rbCustomer);
-        btnRegister = findViewById(R.id.btnRegister);
+        btnContinue = findViewById(R.id.btnContinue);
         progressBar = findViewById(R.id.progressBar);
-
-        // Set default selection
-        rbCustomer.setChecked(true);
     }
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(R.string.complete_profile);
+            getSupportActionBar().setTitle("Complete Profile");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
         toolbar.setNavigationOnClickListener(v -> finish());
     }
 
-    private void setupFirebase() {
-        mAuth = FirebaseAuth.getInstance();
-
-        // Check if user is logged in
-        if (mAuth.getCurrentUser() == null) {
-            Toast.makeText(this, R.string.error_not_logged_in, Toast.LENGTH_SHORT).show();
-            finish();
-        }
-    }
-
     private void setupListeners() {
-        btnRegister.setOnClickListener(this);
-
-        rbDriver.setOnClickListener(v -> {
-            userType = "Drivers";
-            rbDriver.setChecked(true);
-            rbCustomer.setChecked(false);
-        });
-
-        rbCustomer.setOnClickListener(v -> {
-            userType = "Customers";
-            rbCustomer.setChecked(true);
-            rbDriver.setChecked(false);
-        });
+        btnContinue.setOnClickListener(v -> saveUserDetails());
     }
 
-    @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.btnRegister) {
-            saveUserDetails();
-        }
-    }
-
-    /**
-     * Save user details to Firebase Database
-     */
     private void saveUserDetails() {
         String name = etName.getText().toString().trim();
+        String userType = rbDriver.isChecked() ? "Drivers" : "Customers";
 
-        // Validate name
         if (TextUtils.isEmpty(name)) {
-            tilName.setError(getString(R.string.name_required));
+            etName.setError("Name is required");
             return;
-        } else {
-            tilName.setError(null);
         }
 
-        // Show loading
         showLoading(true);
 
-        String userId = mAuth.getCurrentUser().getUid();
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        // Create user data map
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("name", name);
-        userMap.put("email", mAuth.getCurrentUser().getEmail());
+        userMap.put("email", FirebaseAuth.getInstance().getCurrentUser().getEmail());
         userMap.put("profileImageUrl", "default");
         userMap.put("createdAt", System.currentTimeMillis());
-        userMap.put("phone", ""); // Will be added later in settings
 
-        // Add driver-specific fields
+        // Add driver-specific fields if needed
         if (userType.equals("Drivers")) {
             userMap.put("car", "");
             userMap.put("vehicleType", "");
@@ -138,33 +90,24 @@ public class DetailsActivity extends AppCompatActivity implements View.OnClickLi
             userMap.put("rating", 5.0);
             userMap.put("totalRides", 0);
             userMap.put("isOnline", false);
-            userMap.put("activated", true); // Admin approval flag
         }
 
-        // Save to Firebase
         FirebaseDatabase.getInstance()
                 .getReference()
                 .child("Users")
                 .child(userType)
                 .child(userId)
                 .updateChildren(userMap)
-                .addOnCompleteListener(task -> {
+                .addOnSuccessListener(aVoid -> {
                     showLoading(false);
-
-                    if (task.isSuccessful()) {
-                        Toast.makeText(DetailsActivity.this,
-                                R.string.profile_completed, Toast.LENGTH_SHORT).show();
-
-                        // Navigate to main activity
-                        Intent intent = new Intent(DetailsActivity.this, LauncherActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
-                    } else {
-                        String error = task.getException() != null ?
-                                task.getException().getMessage() : getString(R.string.error_saving_data);
-                        Toast.makeText(DetailsActivity.this, error, Toast.LENGTH_LONG).show();
-                    }
+                    Toast.makeText(this, "Profile completed!", Toast.LENGTH_SHORT).show();
+                    // Go to LauncherActivity which will redirect to correct map
+                    startActivity(new Intent(this, LauncherActivity.class));
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    showLoading(false);
+                    Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -172,7 +115,7 @@ public class DetailsActivity extends AppCompatActivity implements View.OnClickLi
         if (progressBar != null) {
             progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
         }
-        btnRegister.setEnabled(!show);
+        btnContinue.setEnabled(!show);
         etName.setEnabled(!show);
         rbDriver.setEnabled(!show);
         rbCustomer.setEnabled(!show);

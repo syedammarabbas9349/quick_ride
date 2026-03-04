@@ -7,56 +7,50 @@
     android:padding="32dp"
     android:background="#F5F5F5">
 
-    <!-- App Logo -->
     <ImageView
         android:layout_width="120dp"
         android:layout_height="120dp"
         android:src="@drawable/ic_logo"
-        android:layout_marginBottom="32dp"
-        android:contentDescription="@string/app_logo" />
+        android:layout_marginBottom="32dp" />
 
-    <!-- App Name -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/welcome_to_quickride"
+        android:text="Welcome to QuickRide"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/black"
+        android:textColor="#000000"
         android:layout_marginBottom="8dp" />
 
-    <!-- Tagline -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/tagline"
+        android:text="Safe and Reliable Rides"
         android:textSize="14sp"
         android:textColor="#757575"
         android:layout_marginBottom="48dp" />
 
-    <!-- Login Button -->
+    <!-- Regular Button, not MaterialButton -->
     <Button
         android:id="@+id/btnLogin"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="@string/login"
+        android:text="Login"
         android:textAllCaps="false"
         android:textSize="16sp"
         android:backgroundTint="@color/colorPrimary"
         android:textColor="@android:color/white"
         android:layout_marginBottom="16dp" />
 
-    <!-- Register Button -->
+    <!-- Regular Button, not MaterialButton -->
     <Button
         android:id="@+id/btnRegister"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="@string/register"
+        android:text="Register"
         android:textAllCaps="false"
         android:textSize="16sp"
-        android:backgroundTint="#7452A2"
-        android:textColor="@android:color/white"
-        android:layout_marginBottom="16dp" />
-
+        android:backgroundTint="@android:color/transparent"
+        android:textColor="@color/colorPrimary" />
 
 </LinearLayout>

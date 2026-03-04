@@ -3,6 +3,7 @@ package com.example.quickride.payment;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,8 +17,6 @@ import com.example.quickride.R;
 import com.example.quickride.adapters.PayoutAdapter;
 import com.example.quickride.models.Payout;
 import com.example.quickride.models.User;
-import com.example.quickride.utils.PaymentHelper;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -29,22 +28,24 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-/**
- * Activity for drivers to view earnings and request payouts
- * Supports: JazzCash, EasyPaisa, Bank Transfer
- */
-public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.OnPayoutActionListener {
+public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.OnItemClickListener {
 
     // UI Components
     private Toolbar toolbar;
     private TextView tvAvailableBalance, tvTotalEarnings, tvTotalRides, tvTotalDistance;
-    private MaterialButton btnRequestPayout;
+    private Button btnRequestPayout;
     private RecyclerView recyclerView;
     private CircularProgressIndicator progressBar;
     private View emptyState;
+    private View mainLayout;
 
     // Data
     private PayoutAdapter payoutAdapter;
@@ -64,6 +65,8 @@ public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.O
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_payout);
+
+        mainLayout = findViewById(R.id.layout);
 
         initializeViews();
         setupToolbar();
@@ -233,13 +236,13 @@ public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.O
     // ==================== PAYOUT ACTIONS ====================
 
     @Override
-    public void onPayoutClick(Payout payout, int position) {
+    public void onItemClick(Payout payout, int position) {
         showPayoutDetailsDialog(payout);
     }
 
     @Override
-    public void onRequestWithdraw(Payout payout, int position) {
-        if (!payout.isWithdrawable()) {
+    public void onWithdrawClick(Payout payout, int position) {
+        if (!"available".equals(payout.getStatus()) || payout.getAmount() <= 0) {
             showError("This payout is not available for withdrawal");
             return;
         }
@@ -258,18 +261,17 @@ public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.O
     private String getPayoutDetailsMessage(Payout payout) {
         StringBuilder message = new StringBuilder();
         message.append("Period: ").append(payout.getPeriod()).append("\n");
-        message.append("Amount: ").append(payout.getFormattedAmount()).append("\n");
+        message.append("Amount: ").append(String.format("Rs. %.0f", payout.getAmount())).append("\n");
         message.append("Rides: ").append(payout.getRideCount()).append("\n");
         message.append("Status: ").append(payout.getStatus()).append("\n");
 
         if (payout.getRequestedAt() > 0) {
-            message.append("Requested: ").append(payout.getFormattedRequestedDate()).append("\n");
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+            message.append("Requested: ").append(sdf.format(new Date(payout.getRequestedAt()))).append("\n");
         }
         if (payout.getProcessedAt() > 0) {
-            message.append("Processed: ").append(payout.getFormattedProcessedDate()).append("\n");
-        }
-        if (payout.getTransactionId() != null && !payout.getTransactionId().isEmpty()) {
-            message.append("Transaction ID: ").append(payout.getTransactionId()).append("\n");
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+            message.append("Processed: ").append(sdf.format(new Date(payout.getProcessedAt()))).append("\n");
         }
 
         return message.toString();
@@ -291,7 +293,7 @@ public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.O
     private void showPaymentMethodDetails(Payout payout, int position, String method) {
         // In a real app, you would fetch saved payment methods
         // For now, show input dialog
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Enter " + getMethodDisplayName(method) + " Details");
 
         // Create input field
@@ -351,7 +353,7 @@ public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.O
                     driverRef.child("earnings").child("available")
                             .setValue(availableBalance);
 
-                    Snackbar.make(findViewById(R.id.layout),
+                    Snackbar.make(mainLayout,
                             "Withdrawal request submitted", Snackbar.LENGTH_LONG).show();
 
                     payoutAdapter.notifyItemChanged(position);
@@ -372,7 +374,7 @@ public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.O
     }
 
     private void showError(String message) {
-        Snackbar.make(findViewById(R.id.layout), message, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(mainLayout, message, Snackbar.LENGTH_LONG).show();
     }
 
     @Override

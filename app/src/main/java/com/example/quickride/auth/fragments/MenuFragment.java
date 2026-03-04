@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;  // Changed from MaterialButton
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -11,14 +12,13 @@ import androidx.fragment.app.Fragment;
 
 import com.example.quickride.R;
 import com.example.quickride.auth.AuthenticationActivity;
-import com.google.android.material.button.MaterialButton;
 
 /**
  * Welcome fragment with options to login or register
  */
 public class MenuFragment extends Fragment {
 
-    private MaterialButton btnLogin, btnRegister;
+    private Button btnLogin, btnRegister;  // Changed to Button
     private AuthenticationActivity activity;
 
     @Nullable

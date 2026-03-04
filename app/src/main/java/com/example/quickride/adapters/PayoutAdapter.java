@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -13,30 +14,25 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.quickride.R;
 import com.example.quickride.models.Payout;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
 
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Adapter for displaying driver payout history
- */
 public class PayoutAdapter extends RecyclerView.Adapter<PayoutAdapter.ViewHolder> {
 
     private List<Payout> payoutList;
-    private OnPayoutActionListener listener;
+    private OnItemClickListener listener;
     private Context context;
 
-    public interface OnPayoutActionListener {
-        void onPayoutClick(Payout payout, int position);
-        void onRequestWithdraw(Payout payout, int position);
+    // Define the interface
+    public interface OnItemClickListener {
+        void onItemClick(Payout payout, int position);
+        void onWithdrawClick(Payout payout, int position);
     }
 
-    public PayoutAdapter(List<Payout> payoutList, Context context, OnPayoutActionListener listener) {
+    public PayoutAdapter(List<Payout> payoutList, Context context, OnItemClickListener listener) {
         this.payoutList = payoutList;
         this.context = context;
         this.listener = listener;
@@ -53,17 +49,17 @@ public class PayoutAdapter extends RecyclerView.Adapter<PayoutAdapter.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Payout payout = payoutList.get(position);
-        holder.bind(payout, position);
+        holder.bind(payout);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
-                listener.onPayoutClick(payout, position);
+                listener.onItemClick(payout, position);
             }
         });
 
         holder.btnWithdraw.setOnClickListener(v -> {
             if (listener != null && "available".equals(payout.getStatus())) {
-                listener.onRequestWithdraw(payout, position);
+                listener.onWithdrawClick(payout, position);
             }
         });
     }
@@ -73,112 +69,73 @@ public class PayoutAdapter extends RecyclerView.Adapter<PayoutAdapter.ViewHolder
         return payoutList.size();
     }
 
-    /**
-     * ViewHolder for payout items
-     */
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        MaterialCardView cardView;
-        TextView tvPeriod, tvAmount, tvRideCount, tvStatus, tvWithdrawDate;
+    public class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvPeriod, tvAmount, tvRideCount, tvStatus, tvDate;
         ImageView ivStatusIcon;
-        MaterialButton btnWithdraw;
-        View statusIndicator;
+        Button btnWithdraw;
+        CardView cardView;
 
-        ViewHolder(@NonNull View itemView) {
+        public ViewHolder(@NonNull View itemView) {
             super(itemView);
             cardView = itemView.findViewById(R.id.cardView);
             tvPeriod = itemView.findViewById(R.id.period);
             tvAmount = itemView.findViewById(R.id.amount);
             tvRideCount = itemView.findViewById(R.id.rideCount);
             tvStatus = itemView.findViewById(R.id.status);
-            tvWithdrawDate = itemView.findViewById(R.id.withdrawDate);
+            tvDate = itemView.findViewById(R.id.withdrawDate);
             ivStatusIcon = itemView.findViewById(R.id.statusIcon);
             btnWithdraw = itemView.findViewById(R.id.btnWithdraw);
-            statusIndicator = itemView.findViewById(R.id.statusIndicator);
         }
 
-        void bind(Payout payout, int position) {
-            // Format currency
-            NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("en", "PK"));
-            String formattedAmount = "Rs. " + String.format(Locale.getDefault(), "%.0f", payout.getAmount());
-
-            // Set basic info
-            tvPeriod.setText(payout.getPeriod() != null ? payout.getPeriod() : "Week");
-            tvAmount.setText(formattedAmount);
+        void bind(Payout payout) {
+            tvPeriod.setText(payout.getPeriod() != null ? payout.getPeriod() : "—");
+            tvAmount.setText(String.format(Locale.getDefault(), "Rs. %.0f", payout.getAmount()));
             tvRideCount.setText(payout.getRideCount() + " " +
                     (payout.getRideCount() == 1 ? "ride" : "rides"));
-
-            // Set status
             tvStatus.setText(payout.getStatus() != null ?
                     payout.getStatus().substring(0, 1).toUpperCase() +
                             payout.getStatus().substring(1) : "Unknown");
 
-            // Configure based on status
-            configureForStatus(payout);
+            // Format date
+            if (payout.getRequestedAt() > 0) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                tvDate.setText(sdf.format(new Date(payout.getRequestedAt())));
+                tvDate.setVisibility(View.VISIBLE);
+            } else {
+                tvDate.setVisibility(View.GONE);
+            }
 
-            // Set withdraw button visibility
+            // Show withdraw button only for available payouts
             if ("available".equals(payout.getStatus()) && payout.getAmount() > 0) {
                 btnWithdraw.setVisibility(View.VISIBLE);
             } else {
                 btnWithdraw.setVisibility(View.GONE);
             }
 
-            // Format date if available
-            if (payout.getProcessedAt() > 0) {
-                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-                tvWithdrawDate.setText("Processed: " + sdf.format(new Date(payout.getProcessedAt())));
-                tvWithdrawDate.setVisibility(View.VISIBLE);
-            } else if (payout.getRequestedAt() > 0) {
-                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-                tvWithdrawDate.setText("Requested: " + sdf.format(new Date(payout.getRequestedAt())));
-                tvWithdrawDate.setVisibility(View.VISIBLE);
-            } else {
-                tvWithdrawDate.setVisibility(View.GONE);
-            }
-        }
-
-        private void configureForStatus(Payout payout) {
+            // Set status icon and color based on status
             String status = payout.getStatus() != null ? payout.getStatus().toLowerCase() : "";
 
             switch (status) {
                 case "available":
-                    statusIndicator.setBackgroundColor(
-                            itemView.getContext().getColor(R.color.green_500));
                     ivStatusIcon.setImageResource(R.drawable.ic_available);
-                    ivStatusIcon.setColorFilter(
-                            itemView.getContext().getColor(R.color.green_500));
-                    cardView.setStrokeColor(
-                            itemView.getContext().getColor(R.color.green_500));
+                    ivStatusIcon.setColorFilter(context.getColor(R.color.green_500));
+                    tvStatus.setTextColor(context.getColor(R.color.green_500));
                     break;
-
                 case "pending":
-                    statusIndicator.setBackgroundColor(
-                            itemView.getContext().getColor(R.color.orange_500));
                     ivStatusIcon.setImageResource(R.drawable.ic_pending);
-                    ivStatusIcon.setColorFilter(
-                            itemView.getContext().getColor(R.color.orange_500));
-                    cardView.setStrokeColor(
-                            itemView.getContext().getColor(R.color.orange_500));
+                    ivStatusIcon.setColorFilter(context.getColor(R.color.orange_500));
+                    tvStatus.setTextColor(context.getColor(R.color.orange_500));
                     break;
-
                 case "completed":
                 case "paid":
-                    statusIndicator.setBackgroundColor(
-                            itemView.getContext().getColor(R.color.blue_500));
                     ivStatusIcon.setImageResource(R.drawable.ic_check_circle);
-                    ivStatusIcon.setColorFilter(
-                            itemView.getContext().getColor(R.color.blue_500));
-                    cardView.setStrokeColor(
-                            itemView.getContext().getColor(R.color.blue_500));
+                    ivStatusIcon.setColorFilter(context.getColor(R.color.blue_500));
+                    tvStatus.setTextColor(context.getColor(R.color.blue_500));
                     break;
-
                 default:
-                    statusIndicator.setBackgroundColor(
-                            itemView.getContext().getColor(R.color.grey_500));
                     ivStatusIcon.setImageResource(R.drawable.ic_info);
-                    ivStatusIcon.setColorFilter(
-                            itemView.getContext().getColor(R.color.grey_500));
-                    cardView.setStrokeColor(
-                            itemView.getContext().getColor(R.color.grey_500));
+                    ivStatusIcon.setColorFilter(context.getColor(R.color.grey_500));
+                    tvStatus.setTextColor(context.getColor(R.color.grey_500));
                     break;
             }
         }

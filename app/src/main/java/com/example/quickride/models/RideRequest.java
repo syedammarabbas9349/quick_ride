@@ -26,9 +26,14 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -43,6 +48,7 @@ public class RideRequest {
     private String rideId;
     private String customerId;
     private String driverId;
+    private long timestamp;
 
     // Locations
     private LocationObject pickupLocation;
@@ -83,14 +89,7 @@ public class RideRequest {
     private boolean isCancelled;
     private String cancelledBy;            // "customer", "driver", "system"
     private String cancellationReason;
-    private int cancellationType;
-    // Ride identifiers
-
-
-    // Add this line:
-    private long timestamp;  // Add this!
-
-// Locations...// 1: customer, 2: driver, 3: timeout, 4: payment
+    private int cancellationType;           // 1: customer, 2: driver, 3: timeout, 4: payment
 
     // Payment
     private String paymentMethod;           // "jazzcash", "easypaisa", "cash"
@@ -107,7 +106,6 @@ public class RideRequest {
     private String customerPhone;
     private String customerImageUrl;
     private String customerNotificationKey;
-
 
     // Driver info (cached)
     private String driverName;
@@ -379,6 +377,7 @@ public class RideRequest {
         rideMap.put("status", "pending");
         rideMap.put("state", 0);
         rideMap.put("createdAt", ServerValue.TIMESTAMP);
+        rideMap.put("timestamp", System.currentTimeMillis());
 
         // Locations
         rideMap.put("pickupAddress", pickupAddress);
@@ -450,13 +449,9 @@ public class RideRequest {
     private void calculateFare() {
         this.fare = PriceCalculator.calculateFare(distance, pricePerKm, baseFare);
     }
-    public long getTimestamp() {
-        return timestamp;
-    }
 
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-    }
+    // ==================== RIDE ACTIONS ====================
+
     /**
      * Driver accepts the ride
      */
@@ -488,13 +483,8 @@ public class RideRequest {
         }
 
         // Send notification to customer
-        if (context != null && customerNotificationKey != null) {
-            NotificationHelper.getInstance(context).sendNotification(
-                    customerNotificationKey,
-                    "Driver Accepted",
-                    "Your driver " + driverName + " is on the way"
-            );
-        }
+        sendNotificationToCustomer("ride_accepted", "Driver Accepted",
+                "Your driver " + driverName + " is on the way with " + driverCar);
     }
 
     /**
@@ -515,13 +505,8 @@ public class RideRequest {
         }
 
         // Send notification to customer
-        if (context != null && customerNotificationKey != null) {
-            NotificationHelper.getInstance(context).sendNotification(
-                    customerNotificationKey,
-                    "Driver Arrived",
-                    "Your driver has arrived at the pickup location"
-            );
-        }
+        sendNotificationToCustomer("driver_arrived", "Driver Arrived",
+                "Your driver " + driverName + " has arrived at the pickup location");
     }
 
     /**
@@ -561,13 +546,8 @@ public class RideRequest {
         }
 
         // Send notification to customer
-        if (context != null && customerNotificationKey != null) {
-            NotificationHelper.getInstance(context).sendNotification(
-                    customerNotificationKey,
-                    "Ride Completed",
-                    "Your ride has been completed. Total: Rs. " + String.format("%.0f", fare)
-            );
-        }
+        String message = String.format("Your ride is complete. Total: Rs. %.0f", fare);
+        sendNotificationToCustomer("ride_completed", "Ride Completed", message);
     }
 
     /**
@@ -596,14 +576,67 @@ public class RideRequest {
         }
 
         // Send notification to the other party
-        if (context != null) {
-            String notificationKey = cancelledBy.equals("customer") ? driverNotificationKey : customerNotificationKey;
-            String title = "Ride Cancelled";
-            String message = "Your ride has been cancelled" +
-                    (reason != null ? ": " + reason : "");
+        sendCancellationNotification(cancelledBy, reason);
+    }
 
-            if (notificationKey != null) {
-                NotificationHelper.getInstance(context).sendNotification(notificationKey, title, message);
+    /**
+     * Helper method to send notification to customer
+     */
+    private void sendNotificationToCustomer(String type, String title, String message) {
+        if (context != null && customerNotificationKey != null && !customerNotificationKey.isEmpty()) {
+            List<String> recipientIds = new ArrayList<>();
+            recipientIds.add(customerNotificationKey);
+
+            try {
+                JSONObject data = new JSONObject();
+                data.put("type", type);
+                data.put("rideId", rideId);
+                if (driverName != null) data.put("driverName", driverName);
+                if (fare > 0) data.put("fare", fare);
+
+                NotificationHelper.getInstance(context).sendNotification(
+                        recipientIds,
+                        title,
+                        message,
+                        data
+                );
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Helper method to send cancellation notification
+     */
+    private void sendCancellationNotification(String cancelledBy, String reason) {
+        if (context == null) return;
+
+        String notificationKey = cancelledBy.equals("customer") ? driverNotificationKey : customerNotificationKey;
+
+        if (notificationKey != null && !notificationKey.isEmpty()) {
+            List<String> recipientIds = new ArrayList<>();
+            recipientIds.add(notificationKey);
+
+            try {
+                JSONObject data = new JSONObject();
+                data.put("type", "ride_cancelled");
+                data.put("rideId", rideId);
+                data.put("cancelledBy", cancelledBy);
+                data.put("reason", reason);
+
+                String title = "Ride Cancelled";
+                String message = "Your ride has been cancelled" +
+                        (reason != null && !reason.isEmpty() ? ": " + reason : "");
+
+                NotificationHelper.getInstance(context).sendNotification(
+                        recipientIds,
+                        title,
+                        message,
+                        data
+                );
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -727,6 +760,9 @@ public class RideRequest {
 
     public String getDriverId() { return driverId; }
     public void setDriverId(String driverId) { this.driverId = driverId; }
+
+    public long getTimestamp() { return timestamp; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
 
     public LocationObject getPickupLocation() { return pickupLocation; }
     public void setPickupLocation(LocationObject pickupLocation) {

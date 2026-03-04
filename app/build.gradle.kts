@@ -76,6 +76,10 @@ dependencies {
     // Work Manager
     implementation("androidx.work:work-runtime:2.9.0")
 
+
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+
+
     // Firebase (BoM)
     implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
     implementation("com.google.firebase:firebase-database")
@@ -122,6 +126,9 @@ dependencies {
 
     // OneSignal
     implementation("com.onesignal:OneSignal:5.1.6")
+
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

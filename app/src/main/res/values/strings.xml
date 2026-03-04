@@ -392,7 +392,15 @@
     <string name="day_ago">%d day ago</string>
     <string name="days_ago">%d days ago</string>
 
-
+    <!-- Drawer Items for Driver -->
+    <string-array name="drawer_items_driver">
+        <item>Ride History</item>
+        <item>Earnings</item>
+        <item>Payout</item>
+        <item>Settings</item>
+        <item>Help &amp; Support</item>
+        <item>Logout</item>
+    </string-array>
 
     <!-- Map -->
     <string name="map_style">Map Style</string>
@@ -403,6 +411,7 @@
     <!-- API Keys -->
     <string name="google_maps_key">AIzaSyCz9EyQOOMAoEK7TAbaxlkp7wxRtiTzY6o</string>
     <string name="onesignal_app_id">b8f06409-62cf-48ce-9a8a-36d5843e287f</string>
+    <string name="onesignal_rest_api_key">os_v2_app_xdygiclcz5em5gukg3kyiprip4dgi6bsq5quv6mhxv4rhqesta7uijnmxphbketch7rn2cdrzjh5ag32bisgoe6jiacnacg4fds4tfa</string>
     <!-- JazzCash API Configuration -->
     <string name="jazzcash_api_url">https://sandbox.jazzcash.com.pk</string>
     <string name="jazzcash_merchant_id">YOUR_MERCHANT_ID</string>

@@ -54,7 +54,14 @@ public class RouteHelper {
 
     public void setCallback(RouteCallback callback) {
         this.callback = callback;
+    }/**
+     * Get route with callback
+     */
+    public void getRoute(LatLng origin, LatLng destination, RouteCallback callback) {
+        this.callback = callback;
+        getRoute(origin, destination);
     }
+
 
     /**
      * Get route between origin and destination

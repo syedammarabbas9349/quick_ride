@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/grey_50"
-    tools:context=".auth.DetailsActivity">
+    android:background="#F5F5F5">
 
-    <!-- Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
@@ -16,8 +13,7 @@
         android:background="@color/colorPrimary"
         app:titleTextColor="@android:color/white"
         app:navigationIcon="@drawable/ic_arrow_back_24dp"
-        app:title="@string/complete_profile"
-        app:elevation="0dp" />
+        app:title="Complete Profile" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -29,189 +25,98 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Header Icon -->
             <ImageView
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:src="@drawable/ic_profile"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/ic_logo"
                 android:layout_gravity="center"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="24dp"
-                />
+                android:layout_marginBottom="16dp" />
 
-            <!-- Title -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/tell_us_about_yourself"
+                android:text="Complete Your Profile"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/black"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="8dp"
+                android:layout_gravity="center" />
 
-            <!-- Subtitle -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/complete_your_profile"
+                android:text="Tell us a bit about yourself"
                 android:textSize="14sp"
-                android:textColor="@color/grey_600"
-                android:layout_marginBottom="32dp" />
+                android:textColor="#757575"
+                android:layout_marginBottom="32dp"
+                android:layout_gravity="center" />
 
-            <!-- Name Input -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilName"
+            <!-- Name Field -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Full Name"
+                android:textSize="14sp"
+                android:textColor="#757575"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/etName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:hint="Enter your full name"
+                android:padding="12dp"
+                android:background="@drawable/edit_text_bg"
                 android:layout_marginBottom="24dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                app:placeholderText="Enter your full name"
-                app:startIconDrawable="@drawable/ic_person"
-                app:startIconTint="@color/colorPrimary">
+                android:maxLines="1" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/full_name"
-                    android:inputType="textPersonName"
-                    android:maxLines="1"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Role Selection -->
+            <!-- I am a... -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/i_want_to"
+                android:text="I am a"
                 android:textSize="14sp"
-                android:textColor="@color/grey_600"
+                android:textColor="#757575"
                 android:layout_marginBottom="12dp" />
 
-            <com.google.android.material.card.MaterialCardView
+            <RadioGroup
+                android:id="@+id/radioGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/grey_300">
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="32dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <RadioButton
+                    android:id="@+id/rbDriver"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="8dp">
+                    android:layout_weight="1"
+                    android:text="Driver"
+                    android:textSize="16sp"
+                    android:checked="true"
+                    android:buttonTint="@color/colorPrimary"
+                    android:padding="8dp" />
 
-                    <!-- Driver Option -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:padding="12dp"
-                        android:background="?selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <com.google.android.material.radiobutton.MaterialRadioButton
-                            android:id="@+id/rbDriver"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="12dp" />
-
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_driver"
-                            android:layout_marginEnd="12dp" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/driver"
-                                android:textSize="16sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/black" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/driver_description"
-                                android:textSize="12sp"
-                                android:textColor="@color/grey_600" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/grey_300" />
-
-                    <!-- Customer Option -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:padding="12dp"
-                        android:background="?selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <com.google.android.material.radiobutton.MaterialRadioButton
-                            android:id="@+id/rbCustomer"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="12dp"
-                            android:checked="true" />
-
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@drawable/ic_customer"
-                            app:tint="@color/colorPrimary"
-                            android:layout_marginEnd="12dp" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/customer"
-                                android:textSize="16sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/black" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/customer_description"
-                                android:textSize="12sp"
-                                android:textColor="@color/grey_600" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                <RadioButton
+                    android:id="@+id/rbCustomer"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Customer"
+                    android:textSize="16sp"
+                    android:buttonTint="@color/colorPrimary"
+                    android:padding="8dp" />
+            </RadioGroup>
 
             <!-- Info Card -->
-            <com.google.android.material.card.MaterialCardView
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/colorPrimaryLight">
+                app:cardBackgroundColor="#E3F2FD">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -222,7 +127,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/note"
+                        android:text="Note"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorPrimary"
@@ -231,36 +136,32 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/role_note"
+                        android:text="You can change your role later in settings, but this will affect your ride options."
                         android:textSize="12sp"
-                        android:textColor="@color/grey_700" />
+                        android:textColor="#616161" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </androidx.cardview.widget.CardView>
 
-            <!-- Register Button -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
                 <Button
-                    android:backgroundTint="@color/colorPrimary"
-                    android:textColor="@android:color/white"
-                    android:id="@+id/btnRegister"
+                    android:id="@+id/btnContinue"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:text="@string/complete_registration"
+                    android:text="Continue"
                     android:textAllCaps="false"
                     android:textSize="16sp"
-                    app:cornerRadius="12dp"/>
+                    android:backgroundTint="@color/colorPrimary"
+                    android:textColor="@android:color/white" />
 
-
-                <com.google.android.material.progressindicator.CircularProgressIndicator
+                <ProgressBar
                     android:id="@+id/progressBar"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_gravity="center"
-                    android:visibility="gone"
-                    app:indicatorColor="@color/colorPrimary" />
+                    android:visibility="gone" />
             </FrameLayout>
 
         </LinearLayout>

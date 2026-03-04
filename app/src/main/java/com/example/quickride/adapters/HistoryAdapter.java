@@ -1,8 +1,6 @@
 package com.example.quickride.adapters;
 
 import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,7 +11,6 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.quickride.R;
-import com.example.quickride.history.HistorySingleActivity;
 import com.example.quickride.models.RideHistory;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -23,7 +20,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.text.SimpleDateFormat;
@@ -36,12 +32,18 @@ import java.util.Locale;
  */
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
 
-    private List<RideHistory> historyList;
-    private Context context;
+    private final List<RideHistory> historyList;
+    private  final Context context;
+    private final OnHistoryItemClickListener listener;
 
-    public HistoryAdapter(List<RideHistory> historyList, Context context) {
+    public interface OnHistoryItemClickListener {
+        void onItemClick(RideHistory ride, int position);
+    }
+
+    public HistoryAdapter(List<RideHistory> historyList, Context context, OnHistoryItemClickListener listener) {
         this.historyList = historyList;
         this.context = context;
+        this.listener = listener;
     }
 
     @NonNull
@@ -55,15 +57,12 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RideHistory ride = historyList.get(position);
-        holder.bind(ride, position);
+        holder.bind(ride);
 
-        // Click listener to open details
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(v.getContext(), HistorySingleActivity.class);
-            Bundle bundle = new Bundle();
-            bundle.putString("rideId", ride.getRideId());
-            intent.putExtras(bundle);
-            v.getContext().startActivity(intent);
+            if (listener != null) {
+                listener.onItemClick(ride, position);
+            }
         });
     }
 
@@ -77,7 +76,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
      */
     class ViewHolder extends RecyclerView.ViewHolder implements OnMapReadyCallback {
 
-        TextView tvRideId, tvDateTime, tvCar, tvPrice;
+        TextView tvRideId, tvTime, tvCar, tvPrice;
         MapView mapView;
         GoogleMap googleMap;
         CardView cardView;
@@ -88,7 +87,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             super(itemView);
 
             tvRideId = itemView.findViewById(R.id.rideId);
-            tvDateTime = itemView.findViewById(R.id.time);
+            tvTime = itemView.findViewById(R.id.time);
             tvCar = itemView.findViewById(R.id.car);
             tvPrice = itemView.findViewById(R.id.price);
             cardView = itemView.findViewById(R.id.card_view);
@@ -102,29 +101,42 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             }
         }
 
-        void bind(RideHistory ride, int position) {
+        void bind(RideHistory ride) {
             this.currentRide = ride;
 
-            // Set text data
-            tvRideId.setText(ride.getRideId() != null ?
-                    ride.getRideId().substring(0, Math.min(8, ride.getRideId().length())) : "Ride");
+            // Set ride ID (truncate if too long)
+            if (tvRideId != null) {
+                String rideId = ride.getRideId();
+                if (rideId != null && rideId.length() > 8) {
+                    tvRideId.setText(rideId.substring(0, 8));
+                } else {
+                    tvRideId.setText(rideId != null ? rideId : "Ride");
+                }
+            }
 
-            // Format date
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
-            tvDateTime.setText(sdf.format(new Date(ride.getTimestamp())));
+            // Format date and time
+            if (tvTime != null) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+                tvTime.setText(sdf.format(new Date(ride.getTimestamp())));
+            }
 
             // Set car info
-            tvCar.setText(ride.getCarInfo() != null ? ride.getCarInfo() : "Vehicle");
+            if (tvCar != null) {
+                tvCar.setText(ride.getCarInfo() != null ? ride.getCarInfo() : "Vehicle");
+            }
 
             // Set price
-            tvPrice.setText(String.format(Locale.getDefault(),
-                    "Rs. %.0f", ride.getFare()));
+            if (tvPrice != null) {
+                tvPrice.setText(String.format(Locale.getDefault(), "Rs. %.0f", ride.getFare()));
+            }
 
             // Set map tag with ride data for later use
-            mapView.setTag(ride);
+            if (mapView != null) {
+                mapView.setTag(ride);
+            }
 
             // Update map if already ready
-            if (googleMap != null) {
+            if (googleMap != null && ride != null) {
                 setMapLocation(ride);
             }
         }
@@ -147,7 +159,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             // Set location if data exists
             if (currentRide != null) {
                 setMapLocation(currentRide);
-            } else if (mapView.getTag() instanceof RideHistory) {
+            } else if (mapView != null && mapView.getTag() instanceof RideHistory) {
                 setMapLocation((RideHistory) mapView.getTag());
             }
         }
@@ -169,13 +181,13 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             googleMap.addMarker(new MarkerOptions()
                     .position(pickupLatLng)
                     .title("Pickup")
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_start)));
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
 
             // Add destination marker
             googleMap.addMarker(new MarkerOptions()
                     .position(destLatLng)
                     .title("Destination")
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_finish)));
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
 
             // Build bounds to show both markers
             LatLngBounds.Builder builder = new LatLngBounds.Builder();
