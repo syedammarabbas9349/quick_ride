@@ -42,7 +42,7 @@ import java.util.Map;
  * Manages the entire lifecycle of a ride from request to completion
  */
 @Keep
-public class RideRequest {
+public class RideRequest implements Cloneable {
 
     // Ride identifiers
     private String rideId;

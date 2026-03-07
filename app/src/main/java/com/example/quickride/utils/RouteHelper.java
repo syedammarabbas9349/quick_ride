@@ -1,11 +1,9 @@
 package com.example.quickride.utils;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
-
-import androidx.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -22,7 +20,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -30,7 +27,6 @@ import java.util.concurrent.Executors;
 
 /**
  * Helper class for Google Directions API
- * Handles route calculation between two points
  */
 public class RouteHelper {
 
@@ -54,28 +50,22 @@ public class RouteHelper {
 
     public void setCallback(RouteCallback callback) {
         this.callback = callback;
-    }/**
-     * Get route with callback
-     */
+    }
+
     public void getRoute(LatLng origin, LatLng destination, RouteCallback callback) {
         this.callback = callback;
         getRoute(origin, destination);
     }
 
-
-    /**
-     * Get route between origin and destination
-     */
     public void getRoute(LatLng origin, LatLng destination) {
         String url = getDirectionsUrl(origin, destination);
         executorService.execute(new DownloadTask(url));
     }
 
-    /**
-     * Get route with waypoints
-     */
     public void getRouteWithWaypoints(LatLng origin, LatLng destination, List<LatLng> waypoints) {
+
         StringBuilder waypointsStr = new StringBuilder();
+
         for (LatLng point : waypoints) {
             if (waypointsStr.length() > 0) {
                 waypointsStr.append("|");
@@ -86,17 +76,15 @@ public class RouteHelper {
         String url = DIRECTIONS_API_URL +
                 "origin=" + origin.latitude + "," + origin.longitude +
                 "&destination=" + destination.latitude + "," + destination.longitude +
-                "&waypoints=" + waypointsStr.toString() +
+                "&waypoints=" + waypointsStr +
                 "&mode=driving" +
                 "&key=" + apiKey;
 
         executorService.execute(new DownloadTask(url));
     }
 
-    /**
-     * Get directions URL
-     */
     private String getDirectionsUrl(LatLng origin, LatLng destination) {
+
         return DIRECTIONS_API_URL +
                 "origin=" + origin.latitude + "," + origin.longitude +
                 "&destination=" + destination.latitude + "," + destination.longitude +
@@ -106,9 +94,10 @@ public class RouteHelper {
     }
 
     /**
-     * Download task for fetching route data
+     * Download task
      */
     private class DownloadTask implements Runnable {
+
         private String url;
 
         DownloadTask(String url) {
@@ -117,37 +106,49 @@ public class RouteHelper {
 
         @Override
         public void run() {
-            String data = "";
+
+            String data;
+
             try {
                 data = downloadUrl(url);
-            } catch (IOException e) {
-                Log.e(TAG, "Download error: " + e.getMessage());
-                if (callback != null) {
-                    callback.onRouteFailure("Network error: " + e.getMessage());
-                }
-                return;
-            }
+                parseJson(data);
 
-            parseJson(data);
+            } catch (IOException e) {
+
+                Log.e(TAG, "Download error: " + e.getMessage());
+
+                if (callback != null) {
+
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onRouteFailure("Network error: " + e.getMessage())
+                    );
+                }
+            }
         }
     }
 
     /**
-     * Download data from URL
+     * Download data
      */
     private String downloadUrl(String strUrl) throws IOException {
-        String data = "";
+
+        String data;
+
         InputStream iStream = null;
         HttpURLConnection urlConnection = null;
 
         try {
+
             URL url = new URL(strUrl);
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.connect();
 
             iStream = urlConnection.getInputStream();
+
             BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
+
             StringBuilder sb = new StringBuilder();
+
             String line;
 
             while ((line = br.readLine()) != null) {
@@ -155,87 +156,115 @@ public class RouteHelper {
             }
 
             data = sb.toString();
+
             br.close();
 
         } catch (Exception e) {
+
             Log.e(TAG, "Download exception: " + e.getMessage());
             throw new IOException("Error downloading data", e);
+
         } finally {
-            if (iStream != null) {
-                iStream.close();
-            }
-            if (urlConnection != null) {
-                urlConnection.disconnect();
-            }
+
+            if (iStream != null) iStream.close();
+            if (urlConnection != null) urlConnection.disconnect();
         }
 
         return data;
     }
 
     /**
-     * Parse JSON response from Directions API
+     * Parse JSON response
      */
     private void parseJson(String jsonData) {
+
         ArrayList<LatLng> path = new ArrayList<>();
         double distance = 0;
         int duration = 0;
 
         try {
+
             JSONObject jsonObject = new JSONObject(jsonData);
             String status = jsonObject.getString("status");
 
             if (!"OK".equals(status)) {
+
                 String errorMessage = jsonObject.optString("error_message", "Unknown error");
+
                 Log.e(TAG, "Directions API error: " + status + " - " + errorMessage);
 
                 if (callback != null) {
-                    callback.onRouteFailure("API error: " + status + " - " + errorMessage);
+
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onRouteFailure("API error: " + status)
+                    );
                 }
+
                 return;
             }
 
             JSONArray routes = jsonObject.getJSONArray("routes");
 
-            if (routes.length() > 0) {
-                JSONObject route = routes.getJSONObject(0);
-                JSONArray legs = route.getJSONArray("legs");
-
-                // Calculate total distance and duration
-                for (int i = 0; i < legs.length(); i++) {
-                    JSONObject leg = legs.getJSONObject(i);
-                    distance += leg.getJSONObject("distance").getDouble("value");
-                    duration += leg.getJSONObject("duration").getInt("value");
-                }
-
-                // Get overview polyline
-                JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
-                String encodedPoints = overviewPolyline.getString("points");
-                path = (ArrayList<LatLng>) PolyUtil.decode(encodedPoints);
-
-                // Convert distance to km
-                distance = distance / 1000.0;
+            if (routes.length() == 0) {
 
                 if (callback != null) {
-                    callback.onRouteSuccess(path, distance, duration);
+
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onRouteFailure("No routes found")
+                    );
                 }
-            } else {
-                if (callback != null) {
-                    callback.onRouteFailure("No routes found");
-                }
+
+                return;
+            }
+
+            JSONObject route = routes.getJSONObject(0);
+            JSONArray legs = route.getJSONArray("legs");
+
+            for (int i = 0; i < legs.length(); i++) {
+
+                JSONObject leg = legs.getJSONObject(i);
+
+                distance += leg.getJSONObject("distance").getDouble("value");
+                duration += leg.getJSONObject("duration").getInt("value");
+            }
+
+            JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
+
+            String encodedPoints = overviewPolyline.getString("points");
+
+            path = new ArrayList<>(PolyUtil.decode(encodedPoints));
+
+            distance = distance / 1000.0;
+
+            final ArrayList<LatLng> finalPath = path;
+            final double finalDistance = distance;
+            final int finalDuration = duration;
+
+            if (callback != null) {
+
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onRouteSuccess(finalPath, finalDistance, finalDuration)
+                );
             }
 
         } catch (JSONException e) {
+
             Log.e(TAG, "JSON parsing error: " + e.getMessage());
+
             if (callback != null) {
-                callback.onRouteFailure("Error parsing route data");
+
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onRouteFailure("Error parsing route data")
+                );
             }
         }
     }
 
     /**
-     * Get polyline options for drawing route
+     * Create polyline
      */
     public static PolylineOptions createPolylineOptions(List<LatLng> points, int color) {
+
         return new PolylineOptions()
                 .addAll(points)
                 .width(12)
@@ -244,48 +273,60 @@ public class RouteHelper {
     }
 
     /**
-     * Calculate distance between two points (static utility)
+     * Calculate distance
      */
     public static float calculateDistance(LatLng start, LatLng end) {
+
         float[] results = new float[1];
+
         android.location.Location.distanceBetween(
-                start.latitude, start.longitude,
-                end.latitude, end.longitude,
-                results);
+                start.latitude,
+                start.longitude,
+                end.latitude,
+                end.longitude,
+                results
+        );
+
         return results[0];
     }
 
     /**
-     * Format duration from seconds to readable string
+     * Format duration
      */
     public static String formatDuration(int seconds) {
+
         int hours = seconds / 3600;
         int minutes = (seconds % 3600) / 60;
 
         if (hours > 0) {
             return String.format(Locale.getDefault(), "%d hr %d min", hours, minutes);
-        } else {
-            return String.format(Locale.getDefault(), "%d min", minutes);
         }
+
+        return String.format(Locale.getDefault(), "%d min", minutes);
     }
 
     /**
-     * Format distance from km to readable string
+     * Format distance
      */
     public static String formatDistance(double km) {
+
         if (km < 1) {
+
             int meters = (int) (km * 1000);
+
             return String.format(Locale.getDefault(), "%d m", meters);
-        } else {
-            return String.format(Locale.getDefault(), "%.1f km", km);
         }
+
+        return String.format(Locale.getDefault(), "%.1f km", km);
     }
 
     /**
-     * Shutdown executor service
+     * Shutdown executor
      */
     public void shutdown() {
+
         if (executorService != null && !executorService.isShutdown()) {
+
             executorService.shutdown();
         }
     }

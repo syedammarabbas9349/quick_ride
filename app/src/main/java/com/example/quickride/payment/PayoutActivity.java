@@ -98,7 +98,12 @@ public class PayoutActivity extends AppCompatActivity implements PayoutAdapter.O
     }
 
     private void setupFirebase() {
-        currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        } else {
+            finish();
+            return;
+        }
         driverRef = FirebaseDatabase.getInstance()
                 .getReference()
                 .child("Users")

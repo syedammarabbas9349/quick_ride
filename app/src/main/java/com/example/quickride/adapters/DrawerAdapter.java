@@ -7,15 +7,14 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-import com.example.quickride.R;
 
 import com.example.quickride.R;
 
 public class DrawerAdapter extends BaseAdapter {
 
-    private Context context;
-    private String[] items;
-    private int[] icons;
+    private final Context context;
+    private final String[] items;
+    private final int[] icons;
     private int selectedPosition = 0;
 
     public DrawerAdapter(Context context, String[] items, int[] icons) {

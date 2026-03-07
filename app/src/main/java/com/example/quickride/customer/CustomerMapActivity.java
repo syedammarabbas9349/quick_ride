@@ -44,6 +44,7 @@ import com.example.quickride.auth.LauncherActivity;
 import com.example.quickride.history.HistoryActivity;
 import com.example.quickride.models.RideRequest;
 import com.example.quickride.models.ServiceType;
+import com.example.quickride.payment.AddPaymentActivity;
 import com.example.quickride.payment.PaymentActivity;
 import com.example.quickride.utils.LocationHelper;
 import com.example.quickride.utils.NotificationHelper;
@@ -96,6 +97,8 @@ public class CustomerMapActivity extends AppCompatActivity
         OnMapReadyCallback,
         RouteHelper.RouteCallback {
 
+    private static final String TAG = "CustomerMapActivity";
+
     // Constants
     private static final int TIMEOUT_MILLISECONDS = 20000;
     private static final int CANCEL_OPTION_MILLISECONDS = 10000;
@@ -109,12 +112,14 @@ public class CustomerMapActivity extends AppCompatActivity
     private Toolbar toolbar;
     private NavigationView navigationView;
     private CardView mContainer;
-    private LinearLayout mDriverInfo, mRadioLayout, mLocation, mLooking, mTimeout;
+    private LinearLayout mDriverInfo, mRadioLayout, mLocation, mLooking;
+    private TextView mTimeout;
     private ImageView mDriverProfileImage, mDrawerButton;
     private TextView mDriverName, mDriverCar, mDriverLicense, mRatingText;
     private TextView autocompleteFragmentTo, autocompleteFragmentFrom;
-    private Button mRequest;
-    private FloatingActionButton mCallDriver, mCancel, mCancelTimeout, mCurrentLocation;
+    private Button mRequest, mSettings, mLogout;
+    private Button mCallDriver, mCancel, mCancelTimeout;
+    private FloatingActionButton mCurrentLocation;
     private RecyclerView mRecyclerView;
     private TypeAdapter mAdapter;
 
@@ -149,24 +154,36 @@ public class CustomerMapActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_customer_map);
 
-        initializeViews();
-        setupToolbar();
-        setupNavigationDrawer();
-        initializeHelpers();
-        setupPlaces();
-        setupRecyclerView();
-        setupLocation();
-        checkForActiveRide();
-        setupMap();
+        try {
+            Log.d(TAG, "onCreate started");
+            setContentView(R.layout.activity_customer_map);
+            Log.d(TAG, "Layout inflated successfully");
+
+            initializeViews();
+            setupToolbar();
+            setupNavigationDrawer();
+            initializeHelpers();
+            setupPlaces();
+            setupRecyclerView();
+            setupLocation();
+            checkForActiveRide();
+            setupMap();
+
+            Log.d(TAG, "onCreate completed");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onCreate", e);
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void initializeViews() {
+
         drawer = findViewById(R.id.drawer_layout);
         toolbar = findViewById(R.id.toolbar);
         navigationView = findViewById(R.id.nav_view);
         mContainer = findViewById(R.id.container_card);
+
         mDriverInfo = findViewById(R.id.driverInfo);
         mRadioLayout = findViewById(R.id.radioLayout);
         mLocation = findViewById(R.id.location_layout);
@@ -181,27 +198,73 @@ public class CustomerMapActivity extends AppCompatActivity
 
         autocompleteFragmentTo = findViewById(R.id.place_to);
         autocompleteFragmentFrom = findViewById(R.id.place_from);
+
         mDrawerButton = findViewById(R.id.drawerButton);
 
         mRequest = findViewById(R.id.request);
+        mSettings = findViewById(R.id.settings);
+        mLogout = findViewById(R.id.logout);
+
         mCallDriver = findViewById(R.id.phone);
         mCancel = findViewById(R.id.cancel);
         mCancelTimeout = findViewById(R.id.cancel_looking);
         mCurrentLocation = findViewById(R.id.current_location);
+
         mRecyclerView = findViewById(R.id.recyclerView);
 
-        Button mLogout = findViewById(R.id.logout);
-        mLogout.setOnClickListener(v -> logout());
+        // SETTINGS BUTTON
+        if (mSettings != null) {
+            mSettings.setOnClickListener(v -> {
+                Log.d(TAG,"Settings clicked");
+
+                Intent intent =
+                        new Intent(CustomerMapActivity.this,
+                                CustomerSettingsActivity.class);
+
+                startActivity(intent);
+            });
+        }
+
+        // LOGOUT BUTTON
+        if (mLogout != null) {
+            mLogout.setOnClickListener(v -> {
+                Log.d(TAG,"Logout clicked");
+                logout();
+            });
+        }
+
+        // REQUEST BUTTON
+        if (mRequest != null) {
+            mRequest.setOnClickListener(v -> {
+
+                if (!requestBol) {
+                    startRideRequest();
+                } else {
+                    cancelRide();
+                }
+
+            });
+        }
+
     }
 
     private void setupToolbar() {
+
         setSupportActionBar(toolbar);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+
+        ActionBarDrawerToggle toggle =
+                new ActionBarDrawerToggle(
+                        this,
+                        drawer,
+                        toolbar,
+                        R.string.navigation_drawer_open,
+                        R.string.navigation_drawer_close);
+
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        mDrawerButton.setOnClickListener(v -> drawer.openDrawer(Gravity.LEFT));
+        mDrawerButton.setOnClickListener(v ->
+                drawer.openDrawer(GravityCompat.START));
     }
 
     private void setupNavigationDrawer() {
@@ -242,12 +305,27 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     private void setupRecyclerView() {
+
+        routeData = new ArrayList<>();
+
         typeArrayList = getTypeList();
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        mAdapter = new TypeAdapter(typeArrayList, this, routeData, (type, position) -> {
-            // Handle type selection if needed
-        });
+
+        mRecyclerView.setLayoutManager(
+                new LinearLayoutManager(
+                        this,
+                        LinearLayoutManager.HORIZONTAL,
+                        false));
+
+        mAdapter = new TypeAdapter(
+                typeArrayList,
+                this,
+                routeData,
+                (type, position) -> {
+                    Log.d(TAG,"Vehicle selected: " + type.getName());
+                });
+
         mRecyclerView.setAdapter(mAdapter);
+
     }
 
     private ArrayList<ServiceType> getTypeList() {
@@ -299,10 +377,12 @@ public class CustomerMapActivity extends AppCompatActivity
     private LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
+            if (locationResult == null) return;
+
             for (Location location : locationResult.getLocations()) {
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
 
-                if (!zoomUpdated) {
+                if (!zoomUpdated && mMap != null) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17f));
                     zoomUpdated = true;
                 }
@@ -320,8 +400,12 @@ public class CustomerMapActivity extends AppCompatActivity
         pickupLatLng = mLocationHelper.getCurrentLocation();
         pickupAddress = "Current Location";
 
-        autocompleteFragmentFrom.setText(pickupAddress);
-        mCurrentLocation.setImageResource(R.drawable.ic_location_on_primary_24dp);
+        if (autocompleteFragmentFrom != null) {
+            autocompleteFragmentFrom.setText(pickupAddress);
+        }
+        if (mCurrentLocation != null) {
+            mCurrentLocation.setImageResource(R.drawable.ic_location_on_primary_24dp);
+        }
 
         updatePickupMarker();
         fetchAddressFromLocation(pickupLatLng);
@@ -332,23 +416,27 @@ public class CustomerMapActivity extends AppCompatActivity
         }
     }
 
+
+
     private void fetchAddressFromLocation(LatLng latLng) {
         try {
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             List<Address> addresses = geocoder.getFromLocation(
                     latLng.latitude, latLng.longitude, 1);
 
-            if (!addresses.isEmpty()) {
+            if (!addresses.isEmpty() && autocompleteFragmentFrom != null) {
                 Address address = addresses.get(0);
                 pickupAddress = address.getAddressLine(0);
                 autocompleteFragmentFrom.setText(pickupAddress);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Geocoder error", e);
         }
     }
 
     private void updatePickupMarker() {
+        if (mMap == null || pickupLatLng == null) return;
+
         if (pickupMarker != null) pickupMarker.remove();
         pickupMarker = mMap.addMarker(new MarkerOptions()
                 .position(pickupLatLng)
@@ -367,9 +455,16 @@ public class CustomerMapActivity extends AppCompatActivity
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+        Log.d(TAG, "Map is ready");
 
         if (mLocationHelper.hasLocationPermission()) {
-            mMap.setMyLocationEnabled(true);
+            if (ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(this,
+                            Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                mMap.setMyLocationEnabled(true);
+            }
             startLocationUpdates();
         }
     }
@@ -407,12 +502,14 @@ public class CustomerMapActivity extends AppCompatActivity
             public void onGeoQueryReady() {}
 
             @Override
-            public void onGeoQueryError(DatabaseError error) {}
+            public void onGeoQueryError(DatabaseError error) {
+                Log.e(TAG, "GeoQuery error: " + error.getMessage());
+            }
         });
     }
 
     private void addDriverMarker(String driverId, GeoLocation location) {
-        if (mCurrentRide.getDriverId() != null) return;
+        if (mCurrentRide == null || mCurrentRide.getDriverId() != null || mMap == null) return;
 
         LatLng driverLatLng = new LatLng(location.latitude, location.longitude);
         Marker marker = mMap.addMarker(new MarkerOptions()
@@ -447,6 +544,11 @@ public class CustomerMapActivity extends AppCompatActivity
     private void startRideRequest() {
         if (pickupLatLng == null || destinationLatLng == null) {
             Toast.makeText(this, "Please set pickup and destination", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (mAdapter == null || mAdapter.getSelectedItem() == null) {
+            Toast.makeText(this, "Please select a vehicle type", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -495,20 +597,25 @@ public class CustomerMapActivity extends AppCompatActivity
         rideMap.put("status", mCurrentRide.getStatus());
         rideMap.put("timestamp", mCurrentRide.getTimestamp());
 
-        ref.setValue(rideMap);
+        ref.setValue(rideMap)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Ride request saved"))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to save ride request", e));
+
         requestBol = true;
         mRequest.setText(R.string.getting_driver);
     }
 
     private void setupRideTimeout() {
         cancelHandler.postDelayed(() -> {
-            if (mCurrentRide.getDriverId() == null) {
-                runOnUiThread(() -> mTimeout.setVisibility(View.VISIBLE));
+            if (mCurrentRide != null && mCurrentRide.getDriverId() == null) {
+                runOnUiThread(() -> {
+                    if (mTimeout != null) mTimeout.setVisibility(View.VISIBLE);
+                });
             }
         }, CANCEL_OPTION_MILLISECONDS);
 
         timeoutHandler.postDelayed(() -> {
-            if (mCurrentRide.getDriverId() == null) {
+            if (mCurrentRide != null && mCurrentRide.getDriverId() == null) {
                 runOnUiThread(() -> {
                     cancelRide();
                     showNoDriversDialog();
@@ -543,7 +650,7 @@ public class CustomerMapActivity extends AppCompatActivity
                     return;
                 }
 
-                if (driverId != null && mCurrentRide.getDriverId() == null) {
+                if (driverId != null && mCurrentRide != null && mCurrentRide.getDriverId() == null) {
                     mCurrentRide.setDriverId(driverId);
                     cancelHandler.removeCallbacksAndMessages(null);
                     timeoutHandler.removeCallbacksAndMessages(null);
@@ -553,7 +660,9 @@ public class CustomerMapActivity extends AppCompatActivity
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Request listener cancelled: " + error.getMessage());
+            }
         });
     }
 
@@ -572,13 +681,21 @@ public class CustomerMapActivity extends AppCompatActivity
                 String image = snapshot.child("profileImageUrl").getValue(String.class);
                 Double rating = snapshot.child("rating").getValue(Double.class);
 
-                mDriverName.setText(name != null ? name : "Driver");
-                mDriverCar.setText(car != null ? car : "Vehicle info");
-                mDriverLicense.setText(phone != null ? phone : "");
-                mRatingText.setText(String.format(Locale.getDefault(), "%.1f",
-                        rating != null ? rating : 5.0));
+                if (mDriverName != null) {
+                    mDriverName.setText(name != null ? name : "Driver");
+                }
+                if (mDriverCar != null) {
+                    mDriverCar.setText(car != null ? car : "Vehicle info");
+                }
+                if (mDriverLicense != null) {
+                    mDriverLicense.setText(phone != null ? phone : "");
+                }
+                if (mRatingText != null) {
+                    mRatingText.setText(String.format(Locale.getDefault(), "%.1f",
+                            rating != null ? rating : 5.0));
+                }
 
-                if (image != null && !image.equals("default") && !image.isEmpty()) {
+                if (image != null && !image.equals("default") && !image.isEmpty() && mDriverProfileImage != null) {
                     Glide.with(CustomerMapActivity.this)
                             .load(image)
                             .apply(RequestOptions.circleCropTransform())
@@ -591,7 +708,9 @@ public class CustomerMapActivity extends AppCompatActivity
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Error getting driver info: " + error.getMessage());
+            }
         });
     }
 
@@ -602,25 +721,33 @@ public class CustomerMapActivity extends AppCompatActivity
         driverLocationRefListener = driverLocationRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists() || !requestBol) return;
+                if (!snapshot.exists() || !requestBol || mMap == null || pickupLatLng == null) return;
 
                 List<Object> location = (List<Object>) snapshot.getValue();
                 if (location == null || location.size() < 2) return;
 
-                double lat = Double.parseDouble(location.get(0).toString());
-                double lng = Double.parseDouble(location.get(1).toString());
-                LatLng driverLatLng = new LatLng(lat, lng);
+                try {
+                    double lat = Double.parseDouble(location.get(0).toString());
+                    double lng = Double.parseDouble(location.get(1).toString());
+                    LatLng driverLatLng = new LatLng(lat, lng);
 
-                updateDriverMarkerOnMap(driverLatLng);
-                updateDriverDistance(driverLatLng);
+                    updateDriverMarkerOnMap(driverLatLng);
+                    updateDriverDistance(driverLatLng);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing driver location", e);
+                }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Driver location cancelled: " + error.getMessage());
+            }
         });
     }
 
     private void updateDriverMarkerOnMap(LatLng driverLatLng) {
+        if (mMap == null) return;
+
         if (mDriverMarker != null) mDriverMarker.remove();
 
         mDriverMarker = mMap.addMarker(new MarkerOptions()
@@ -630,6 +757,8 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     private void updateDriverDistance(LatLng driverLatLng) {
+        if (pickupLatLng == null || mRequest == null) return;
+
         float[] results = new float[1];
         Location.distanceBetween(
                 pickupLatLng.latitude, pickupLatLng.longitude,
@@ -663,12 +792,14 @@ public class CustomerMapActivity extends AppCompatActivity
 
         if (driverLocationRefListener != null && driverLocationRef != null) {
             driverLocationRef.removeEventListener(driverLocationRefListener);
+            driverLocationRefListener = null;
         }
 
         if (rideStatusListener != null) {
             FirebaseDatabase.getInstance().getReference("customerRequest")
                     .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
                     .removeEventListener(rideStatusListener);
+            rideStatusListener = null;
         }
 
         // Remove from GeoFire
@@ -687,10 +818,18 @@ public class CustomerMapActivity extends AppCompatActivity
 
         clearPolylines();
 
-        mRequest.setText(R.string.call_uber);
-        autocompleteFragmentTo.setText(R.string.to);
-        autocompleteFragmentFrom.setText(R.string.from);
-        mCurrentLocation.setImageResource(R.drawable.ic_location_on_grey_24dp);
+        if (mRequest != null) {
+            mRequest.setText(R.string.call_uber);
+        }
+        if (autocompleteFragmentTo != null) {
+            autocompleteFragmentTo.setText(R.string.to);
+        }
+        if (autocompleteFragmentFrom != null) {
+            autocompleteFragmentFrom.setText(R.string.from);
+        }
+        if (mCurrentLocation != null) {
+            mCurrentLocation.setImageResource(R.drawable.ic_location_on_grey_24dp);
+        }
 
         pickupLatLng = null;
         destinationLatLng = null;
@@ -702,18 +841,20 @@ public class CustomerMapActivity extends AppCompatActivity
 
     private void clearPolylines() {
         for (Polyline polyline : polylines) {
-            polyline.remove();
+            if (polyline != null) polyline.remove();
         }
         polylines.clear();
     }
 
     private void calculateRoute() {
-        if (pickupLatLng == null || destinationLatLng == null) return;
+        if (pickupLatLng == null || destinationLatLng == null || mRouteHelper == null) return;
         mRouteHelper.getRoute(pickupLatLng, destinationLatLng);
     }
 
     @Override
     public void onRouteSuccess(ArrayList<LatLng> path, double distance, int duration) {
+        if (mMap == null) return;
+
         clearPolylines();
 
         PolylineOptions polylineOptions = new PolylineOptions()
@@ -736,16 +877,31 @@ public class CustomerMapActivity extends AppCompatActivity
 
     @Override
     public void onRouteFailure(String error) {
-        Log.e("Route Error", error);
-        Snackbar.make(drawer, "Route error: " + error, Snackbar.LENGTH_SHORT).show();
+        Log.e(TAG, "Route error: " + error);
+        if (drawer != null) {
+            Snackbar.make(drawer, "Route error: " + error, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     private void showBottomSheet(int status) {
-        bottomSheetStatus = status;
-        int animationRes = status > bottomSheetStatus ? R.anim.slide_up : R.anim.slide_down;
 
-        Animation animation = AnimationUtils.loadAnimation(this, animationRes);
+        if (mContainer == null) return;
+
+        int animationRes;
+
+        if (status > bottomSheetStatus) {
+            animationRes = R.anim.slide_up;
+        } else {
+            animationRes = R.anim.slide_down;
+        }
+
+        bottomSheetStatus = status;
+
+        Animation animation =
+                AnimationUtils.loadAnimation(this, animationRes);
+
         animation.setAnimationListener(new Animation.AnimationListener() {
+
             @Override
             public void onAnimationStart(Animation animation) {}
 
@@ -760,14 +916,24 @@ public class CustomerMapActivity extends AppCompatActivity
 
         mContainer.startAnimation(animation);
     }
-
     private void updateBottomSheetContent() {
-        mLocation.setVisibility(bottomSheetStatus == 1 ? View.VISIBLE : View.GONE);
-        mRadioLayout.setVisibility(bottomSheetStatus == 2 ? View.VISIBLE : View.GONE);
-        mLooking.setVisibility(bottomSheetStatus == 3 ? View.VISIBLE : View.GONE);
-        mDriverInfo.setVisibility(bottomSheetStatus == 4 ? View.VISIBLE : View.GONE);
-        mTimeout.setVisibility(bottomSheetStatus == 3 && mCurrentRide.getDriverId() == null ?
-                View.VISIBLE : View.GONE);
+        if (mLocation != null) {
+            mLocation.setVisibility(bottomSheetStatus == 1 ? View.VISIBLE : View.GONE);
+        }
+        if (mRadioLayout != null) {
+            mRadioLayout.setVisibility(bottomSheetStatus == 2 ? View.VISIBLE : View.GONE);
+        }
+        if (mLooking != null) {
+            mLooking.setVisibility(bottomSheetStatus == 3 ? View.VISIBLE : View.GONE);
+        }
+        if (mDriverInfo != null) {
+            mDriverInfo.setVisibility(bottomSheetStatus == 4 ? View.VISIBLE : View.GONE);
+        }
+        if (mTimeout != null) {
+            mTimeout.setVisibility(bottomSheetStatus == 3 &&
+                    (mCurrentRide == null || mCurrentRide.getDriverId() == null) ?
+                    View.VISIBLE : View.GONE);
+        }
     }
 
     private void loadUserProfile() {
@@ -778,18 +944,22 @@ public class CustomerMapActivity extends AppCompatActivity
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) return;
+                if (!snapshot.exists() || navigationView == null) return;
 
                 View header = navigationView.getHeaderView(0);
+                if (header == null) return;
+
                 TextView usernameDrawer = header.findViewById(R.id.usernameDrawer);
                 ImageView imageViewDrawer = header.findViewById(R.id.imageViewDrawer);
 
                 String name = snapshot.child("name").getValue(String.class);
                 String image = snapshot.child("profileImageUrl").getValue(String.class);
 
-                usernameDrawer.setText(name != null ? name : "User");
+                if (usernameDrawer != null) {
+                    usernameDrawer.setText(name != null ? name : "User");
+                }
 
-                if (image != null && !image.equals("default") && !image.isEmpty()) {
+                if (image != null && !image.equals("default") && !image.isEmpty() && imageViewDrawer != null) {
                     Glide.with(CustomerMapActivity.this)
                             .load(image)
                             .apply(RequestOptions.circleCropTransform())
@@ -819,7 +989,9 @@ public class CustomerMapActivity extends AppCompatActivity
 
                 if ("pending".equals(status) || "accepted".equals(status) || "started".equals(status)) {
                     // Restore active ride
-                    mCurrentRide.setDriverId(driverId);
+                    if (mCurrentRide != null) {
+                        mCurrentRide.setDriverId(driverId);
+                    }
                     requestBol = true;
 
                     if (driverId != null) {
@@ -840,14 +1012,34 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     private void logout() {
+        Log.d(TAG, "logout() called");
+
         if (requestBol) {
             Toast.makeText(this, "Cannot logout during active ride", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        FirebaseAuth.getInstance().signOut();
-        startActivity(new Intent(this, LauncherActivity.class));
-        finish();
+        // Show confirmation dialog
+        new AlertDialog.Builder(this)
+                .setTitle("Logout")
+                .setMessage("Are you sure you want to logout?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    Log.d(TAG, "User confirmed logout");
+
+                    // Show a progress message
+                    Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT).show();
+
+                    // Sign out from Firebase
+                    FirebaseAuth.getInstance().signOut();
+
+                    // Navigate to LauncherActivity
+                    Intent intent = new Intent(CustomerMapActivity.this, LauncherActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .setNegativeButton("No", null)
+                .show();
     }
 
     @Override
@@ -862,13 +1054,19 @@ public class CustomerMapActivity extends AppCompatActivity
             if (requestCode == AUTOCOMPLETE_REQUEST_CODE_TO) {
                 destinationLatLng = latLng;
                 destinationAddress = address;
-                autocompleteFragmentTo.setText(address);
+                if (autocompleteFragmentTo != null) {
+                    autocompleteFragmentTo.setText(address);
+                }
 
-                if (destinationMarker != null) destinationMarker.remove();
-                destinationMarker = mMap.addMarker(new MarkerOptions()
-                        .position(destinationLatLng)
-                        .title("Destination")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                if (destinationMarker != null && mMap != null) {
+                    destinationMarker.remove();
+                }
+                if (mMap != null && destinationLatLng != null) {
+                    destinationMarker = mMap.addMarker(new MarkerOptions()
+                            .position(destinationLatLng)
+                            .title("Destination")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                }
 
                 if (pickupLatLng != null) {
                     calculateRoute();
@@ -877,13 +1075,19 @@ public class CustomerMapActivity extends AppCompatActivity
             } else if (requestCode == AUTOCOMPLETE_REQUEST_CODE_FROM) {
                 pickupLatLng = latLng;
                 pickupAddress = address;
-                autocompleteFragmentFrom.setText(address);
+                if (autocompleteFragmentFrom != null) {
+                    autocompleteFragmentFrom.setText(address);
+                }
 
-                if (pickupMarker != null) pickupMarker.remove();
-                pickupMarker = mMap.addMarker(new MarkerOptions()
-                        .position(pickupLatLng)
-                        .title("Pickup")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                if (pickupMarker != null && mMap != null) {
+                    pickupMarker.remove();
+                }
+                if (mMap != null && pickupLatLng != null) {
+                    pickupMarker = mMap.addMarker(new MarkerOptions()
+                            .position(pickupLatLng)
+                            .title("Pickup")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                }
 
                 if (destinationLatLng != null) {
                     calculateRoute();
@@ -892,30 +1096,51 @@ public class CustomerMapActivity extends AppCompatActivity
             }
         } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
             Status status = Autocomplete.getStatusFromIntent(data);
-            Log.e("Places Error", status.getStatusMessage());
+            Log.e(TAG, "Places Error: " + (status != null ? status.getStatusMessage() : "unknown"));
         }
     }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
         int id = item.getItemId();
 
         if (id == R.id.history) {
+
             startActivity(new Intent(this, HistoryActivity.class)
                     .putExtra("userType", "Customers"));
-        } else if (id == R.id.settings) {
+
+        }
+        else if (id == R.id.payment) {
+
+            startActivity(new Intent(this, AddPaymentActivity.class));
+
+        }
+        else if (id == R.id.settings) {
+
             startActivity(new Intent(this, CustomerSettingsActivity.class));
-        } else if (id == R.id.payment) {
-            startActivity(new Intent(this, PaymentActivity.class));
+
+        }
+        else if (id == R.id.help) {
+
+            Toast.makeText(this,
+                    "Help section coming soon",
+                    Toast.LENGTH_SHORT).show();
+
+        }
+        else if (id == R.id.logout) {
+
+            logout();
         }
 
         drawer.closeDrawer(GravityCompat.START);
+
         return true;
     }
 
     @Override
     public void onBackPressed() {
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
+        if (drawer != null && drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else if (bottomSheetStatus > 1) {
             if (requestBol) {
@@ -936,16 +1161,21 @@ public class CustomerMapActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
         if (driverLocationRefListener != null && driverLocationRef != null) {
             driverLocationRef.removeEventListener(driverLocationRefListener);
         }
+
         if (rideStatusListener != null) {
             FirebaseDatabase.getInstance().getReference("customerRequest")
                     .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
                     .removeEventListener(rideStatusListener);
         }
+
         if (mRouteHelper != null) {
             mRouteHelper.shutdown();
         }
+
+        Log.d(TAG, "onDestroy completed");
     }
 }

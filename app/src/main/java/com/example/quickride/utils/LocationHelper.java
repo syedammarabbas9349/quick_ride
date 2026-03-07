@@ -6,7 +6,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Looper;
 
-import androidx.core.app.ActivityCompat;
+import androidx.annotation.RequiresPermission;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -14,6 +14,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.gms.maps.model.LatLng;
 
 /**
@@ -57,10 +58,11 @@ public class LocationHelper {
             return;
         }
 
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(5000);
-        locationRequest.setFastestInterval(2000);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        LocationRequest locationRequest =
+                new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
+                        .setMinUpdateIntervalMillis(2000)
+                        .build();
 
         locationCallback = new LocationCallback() {
             @Override
@@ -97,6 +99,7 @@ public class LocationHelper {
     /**
      * Get last known location
      */
+    @RequiresPermission(allOf = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION})
     public void getLastLocation(LocationListener listener) {
         if (!hasLocationPermission()) {
             listener.onLocationError("Location permission not granted");

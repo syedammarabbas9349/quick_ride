@@ -78,7 +78,13 @@ public class AddPaymentActivity extends AppCompatActivity {
     }
 
     private void setupFirebase() {
-        currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        } else {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         paymentMethodsRef = FirebaseDatabase.getInstance()
                 .getReference()
                 .child("Users")

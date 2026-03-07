@@ -9,6 +9,8 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -42,10 +44,10 @@ public class CustomerSettingsActivity extends AppCompatActivity {
 
     // UI Components
     private EditText mNameField, mPhoneField;
-    private ShapeableImageView mProfileImage;
+    private ImageView mProfileImage;
     private Button mConfirm;
     private Toolbar mToolbar;
-    private CircularProgressIndicator mProgressBar;
+    private ProgressBar mProgressBar;
 
     // Firebase
     private DatabaseReference mCustomerDatabase;

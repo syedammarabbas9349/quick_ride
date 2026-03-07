@@ -24,7 +24,6 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
@@ -66,6 +65,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -80,17 +80,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Driver Map Activity with RecyclerView for ride requests
- */
-public class DriverMapActivity extends AppCompatActivity
-        implements OnMapReadyCallback, RouteHelper.RouteCallback {
+public class DriverMapActivity extends AppCompatActivity implements
+        OnMapReadyCallback,
+        RouteHelper.RouteCallback {
 
     private static final String TAG = "DriverMapActivity";
-
-    // Constants
-    private static final int MAX_SEARCH_DISTANCE = 20;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 100;
+    private static final int MAX_SEARCH_DISTANCE = 20;
 
     // UI Components
     private GoogleMap mMap;
@@ -121,7 +117,6 @@ public class DriverMapActivity extends AppCompatActivity
     private RideRequest currentRide;
     private List<RideRequest> requestList = new ArrayList<>();
     private CardRequestAdapter requestAdapter;
-    private DrawerAdapter drawerAdapter;
 
     // Firebase
     private DatabaseReference driverRef;
@@ -154,34 +149,22 @@ public class DriverMapActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_driver_map);
 
-        try {
-            Log.d(TAG, "onCreate started");
-            setContentView(R.layout.activity_driver_map);
-            Log.d(TAG, "Layout inflated successfully");
-
-            initializeViews();
-            setupToolbar();
-            setupDrawer();
-            setupFirebase();
-            setupLocation();
-            setupMap();
-            setupRecyclerView();
-            setupBottomSheet();
-            setupListeners();
-            loadDriverData();
-            checkForActiveRide();
-
-            Log.d(TAG, "onCreate completed successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onCreate", e);
-            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+        initializeViews();
+        setupToolbar();
+        setupDrawer();
+        setupFirebase();
+        setupLocation();
+        setupMap();
+        setupRecyclerView();
+        setupBottomSheet();
+        setupListeners();
+        loadDriverData();
+        checkForActiveRide();
     }
 
     private void initializeViews() {
-        Log.d(TAG, "initializeViews started");
-
         drawer = findViewById(R.id.drawer_layout);
         toolbar = findViewById(R.id.toolbar);
         drawerList = findViewById(R.id.drawer_list);
@@ -199,45 +182,10 @@ public class DriverMapActivity extends AppCompatActivity
         customerName = findViewById(R.id.customerName);
         pickupAddress = findViewById(R.id.pickupAddress);
         customerProfileImage = findViewById(R.id.customerProfileImage);
-
-        // Log any null views for debugging
-        if (drawerButton == null) Log.e(TAG, "drawerButton is null - check layout ID");
-        if (workingSwitch == null) Log.e(TAG, "workingSwitch is null - check layout ID");
-        if (rideStatusButton == null) Log.e(TAG, "rideStatusButton is null - check layout ID");
-        if (fabMaps == null) Log.e(TAG, "fabMaps is null - check layout ID");
-        if (fabCall == null) Log.e(TAG, "fabCall is null - check layout ID");
-        if (cancelButton == null) Log.e(TAG, "cancelButton is null - check layout ID");
-        if (customerInfo == null) Log.e(TAG, "customerInfo is null - check layout ID");
-        if (bringUpBottomLayout == null) Log.e(TAG, "bringUpBottomLayout is null - check layout ID");
-        if (bottomSheet == null) Log.e(TAG, "bottomSheet is null - check layout ID");
-        if (requestsRecyclerView == null) Log.e(TAG, "requestsRecyclerView is null - check layout ID");
-        if (noRequestsText == null) Log.e(TAG, "noRequestsText is null - check layout ID");
-        if (customerName == null) Log.e(TAG, "customerName is null - check layout ID");
-        if (pickupAddress == null) Log.e(TAG, "pickupAddress is null - check layout ID");
-        if (customerProfileImage == null) Log.e(TAG, "customerProfileImage is null - check layout ID");
-
-        // Header views will be set in setupDrawer
-        driverNameHeader = null;
-        driverStatusHeader = null;
-
-        Log.d(TAG, "initializeViews completed");
     }
 
     private void setupToolbar() {
-        Log.d(TAG, "setupToolbar started");
-
-        if (toolbar == null) {
-            Log.e(TAG, "toolbar is null, cannot setup toolbar");
-            return;
-        }
-
         setSupportActionBar(toolbar);
-
-        if (drawer == null) {
-            Log.e(TAG, "drawer is null, cannot setup drawer toggle");
-            return;
-        }
-
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar,
                 R.string.navigation_drawer_open,
@@ -245,84 +193,84 @@ public class DriverMapActivity extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        if (drawerButton != null) {
-            drawerButton.setOnClickListener(v -> {
-                if (drawer != null) {
-                    drawer.openDrawer(Gravity.LEFT);
-                }
-            });
-            Log.d(TAG, "drawerButton click listener set");
-        } else {
-            Log.e(TAG, "drawerButton is null, cannot set click listener");
-            // Fallback: use home button
-            if (getSupportActionBar() != null) {
-                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-                getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_menu_black_24dp);
-            }
-        }
-
-        Log.d(TAG, "setupToolbar completed");
+        drawerButton.setOnClickListener(v -> drawer.openDrawer(Gravity.LEFT));
     }
 
     private void setupDrawer() {
-        Log.d(TAG, "setupDrawer started");
+        // Get drawer items from resources
+        drawerItems = getResources().getStringArray(R.array.drawer_items_driver);
 
-        try {
-            // Get drawer items from resources
-            drawerItems = getResources().getStringArray(R.array.drawer_items_driver);
+        // Set up adapter
+        DrawerAdapter drawerAdapter = new DrawerAdapter(this, drawerItems, drawerIcons);
+        drawerList.setAdapter(drawerAdapter);
 
-            // Set up adapter
-            drawerAdapter = new DrawerAdapter(this, drawerItems, drawerIcons);
-            drawerList.setAdapter(drawerAdapter);
+        // Add header to ListView
+        View headerView = getLayoutInflater().inflate(R.layout.nav_header_driver, null);
+        drawerList.addHeaderView(headerView);
 
-            // Add header to ListView
-            View headerView = getLayoutInflater().inflate(R.layout.nav_header_driver, null);
-            drawerList.addHeaderView(headerView);
+        // Get header views
+        driverNameHeader = headerView.findViewById(R.id.driverNameDrawer);
+        driverStatusHeader = headerView.findViewById(R.id.driverStatusDrawer);
 
-            // Get header views
-            driverNameHeader = headerView.findViewById(R.id.driverNameDrawer);
-            driverStatusHeader = headerView.findViewById(R.id.driverStatusDrawer);
+        // Set item click listener
+        drawerList.setOnItemClickListener((parent, view, position, id) -> {
+            // The header is at position 0, so actual items start at position 1
+            int actualPosition = position - 1;
 
-            if (driverNameHeader == null) Log.e(TAG, "driverNameHeader is null");
-            if (driverStatusHeader == null) Log.e(TAG, "driverStatusHeader is null");
+            Log.d(TAG, "Drawer clicked - Raw position: " + position + ", Actual position: " + actualPosition);
 
-            // Set item click listener
-            drawerList.setOnItemClickListener((parent, view, position, id) -> {
-                // Adjust position because of header
-                int actualPosition = position - 1;
+            if (actualPosition >= 0 && actualPosition < drawerItems.length) {
+                drawerAdapter.setSelectedPosition(actualPosition);
+                handleDrawerItemClick(actualPosition);
+            } else {
+                Log.e(TAG, "Invalid drawer position: " + actualPosition);
+            }
 
-                if (actualPosition >= 0) {
-                    drawerAdapter.setSelectedPosition(actualPosition);
+            drawer.closeDrawer(GravityCompat.START);
+        });
+    }
 
-                    switch (actualPosition) {
-                        case 0: // History
-                            startActivity(new Intent(this, HistoryActivity.class)
-                                    .putExtra("userType", "Drivers"));
-                            break;
-                        case 1: // Earnings
-                            Toast.makeText(this, "Earnings clicked", Toast.LENGTH_SHORT).show();
-                            break;
-                        case 2: // Payout
-                            startActivity(new Intent(this, PayoutActivity.class));
-                            break;
-                        case 3: // Settings
-                            startActivity(new Intent(this, DriverSettingsActivity.class));
-                            break;
-                        case 4: // Help
-                            Toast.makeText(this, "Help clicked", Toast.LENGTH_SHORT).show();
-                            break;
-                        case 5: // Logout
-                            showLogoutDialog();
-                            break;
-                    }
-                }
+    private void handleDrawerItemClick(int position) {
+        Log.d(TAG, "Handling drawer item at position: " + position);
 
-                drawer.closeDrawer(GravityCompat.START);
-            });
+        switch (position) {
+            case 0: // History
+                Log.d(TAG, "Opening History");
+                startActivity(new Intent(DriverMapActivity.this, HistoryActivity.class)
+                        .putExtra("userType", "Drivers"));
+                break;
 
-            Log.d(TAG, "setupDrawer completed");
-        } catch (Exception e) {
-            Log.e(TAG, "Error in setupDrawer", e);
+            case 1: // Earnings
+                Log.d(TAG, "Earnings clicked");
+                Toast.makeText(this, "Earnings clicked", Toast.LENGTH_SHORT).show();
+                // You can add earnings activity here later
+                break;
+
+            case 2: // Payout
+                Log.d(TAG, "Opening Payout");
+                startActivity(new Intent(DriverMapActivity.this, PayoutActivity.class));
+                break;
+
+            case 3: // Settings
+                Log.d(TAG, "Opening Settings");
+                startActivity(new Intent(DriverMapActivity.this, DriverSettingsActivity.class));
+                break;
+
+            case 4: // Help
+                Log.d(TAG, "Help clicked");
+                Toast.makeText(this, "Help clicked", Toast.LENGTH_SHORT).show();
+                // You can add help activity here later
+                break;
+
+            case 5: // Logout
+                Log.d(TAG, "Logout clicked");
+                showLogoutDialog();
+                break;
+
+            default:
+                Log.e(TAG, "Unknown drawer position: " + position);
+                Toast.makeText(this, "Unknown option", Toast.LENGTH_SHORT).show();
+                break;
         }
     }
 
@@ -333,6 +281,19 @@ public class DriverMapActivity extends AppCompatActivity
                 .setPositiveButton("Yes", (dialog, which) -> logout())
                 .setNegativeButton("No", null)
                 .show();
+    }
+
+    private void logout() {
+        Log.d(TAG, "Performing logout");
+        Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT).show();
+
+        goOffline();
+        FirebaseAuth.getInstance().signOut();
+
+        Intent intent = new Intent(DriverMapActivity.this, LauncherActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void setupFirebase() {
@@ -544,7 +505,9 @@ public class DriverMapActivity extends AppCompatActivity
         stopLocationUpdates();
 
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        geoFireWorking.removeLocation(userId);
+        if (geoFireWorking != null) {
+            geoFireWorking.removeLocation(userId);
+        }
 
         if (driverStatusHeader != null) {
             driverStatusHeader.setText(R.string.offline);
@@ -582,8 +545,10 @@ public class DriverMapActivity extends AppCompatActivity
                 // Update driver location in Firebase
                 if (workingSwitch != null && workingSwitch.isChecked()) {
                     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                    geoFireWorking.setLocation(userId,
-                            new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    if (geoFireWorking != null) {
+                        geoFireWorking.setLocation(userId,
+                                new GeoLocation(location.getLatitude(), location.getLongitude()));
+                    }
 
                     // Update last updated timestamp
                     Map<String, Object> updates = new HashMap<>();
@@ -711,7 +676,7 @@ public class DriverMapActivity extends AppCompatActivity
             updates.put("driverPhone", currentDriver.getPhone());
         }
         updates.put("status", "accepted");
-        updates.put("acceptedTime", System.currentTimeMillis());
+        updates.put("acceptedAt", System.currentTimeMillis());
 
         if (rideInfoRef != null && request.getRideId() != null) {
             rideInfoRef.child(request.getRideId()).updateChildren(updates);
@@ -1170,15 +1135,6 @@ public class DriverMapActivity extends AppCompatActivity
         if (drawer != null) {
             Snackbar.make(drawer, "Route error: " + error, Snackbar.LENGTH_SHORT).show();
         }
-    }
-
-    private void logout() {
-        goOffline();
-        FirebaseAuth.getInstance().signOut();
-        Intent intent = new Intent(this, LauncherActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 
     @Override

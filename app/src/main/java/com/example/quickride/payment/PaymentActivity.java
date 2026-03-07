@@ -82,7 +82,12 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     private void setupFirebase() {
-        currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        } else {
+            finish();
+            return;
+        }
         paymentMethodsRef = FirebaseDatabase.getInstance()
                 .getReference()
                 .child("Users")
@@ -131,7 +136,7 @@ public class PaymentActivity extends AppCompatActivity {
     private void loadPaymentMethods() {
         showLoading(true);
 
-        paymentMethodsRef.addValueEventListener(new ValueEventListener() {
+        paymentMethodsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 paymentMethods.clear();

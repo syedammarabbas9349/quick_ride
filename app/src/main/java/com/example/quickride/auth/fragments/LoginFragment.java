@@ -1,5 +1,6 @@
 package com.example.quickride.auth.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -16,25 +17,28 @@ import androidx.fragment.app.Fragment;
 
 import com.example.quickride.R;
 import com.example.quickride.auth.AuthenticationActivity;
+import com.example.quickride.auth.LauncherActivity;
 import com.google.firebase.auth.FirebaseAuth;
 
-/**
- * Fragment for user login with email and password
- */
 public class LoginFragment extends Fragment {
 
     private EditText etEmail, etPassword;
     private Button btnLogin, btnBack;
     private ProgressBar progressBar;
-
     private FirebaseAuth mAuth;
     private AuthenticationActivity activity;
+    private String userType;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_login, container, false);
+
+        // Get user type from arguments
+        if (getArguments() != null) {
+            userType = getArguments().getString("userType", "Customers");
+        }
 
         initializeViews(view);
         setupFirebase();
@@ -69,7 +73,6 @@ public class LoginFragment extends Fragment {
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        // Validate inputs
         if (TextUtils.isEmpty(email)) {
             etEmail.setError("Email required");
             return;
@@ -83,17 +86,20 @@ public class LoginFragment extends Fragment {
             return;
         }
 
-        // Show loading
         showLoading(true);
 
-        // Attempt login
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     showLoading(false);
-
                     if (task.isSuccessful()) {
                         Toast.makeText(getContext(), "Login successful", Toast.LENGTH_SHORT).show();
-                        // Auth listener in Activity will handle redirect
+                        // Go to LauncherActivity which will redirect to correct map
+                        Intent intent = new Intent(getActivity(), LauncherActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        if (getActivity() != null) {
+                            getActivity().finish();
+                        }
                     } else {
                         String error = task.getException() != null ?
                                 task.getException().getMessage() : "Login failed";

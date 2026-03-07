@@ -20,39 +20,57 @@ public class AuthenticationActivity extends AppCompatActivity {
 
     private static final String TAG = "AuthActivity";
     private FragmentManager fragmentManager;
-    private FirebaseAuth.AuthStateListener authStateListener;
+    private String userType;
+    private String action;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_authentication);
 
-        fragmentManager = getSupportFragmentManager();
-        setupAuthListener();
+        // Get data from intent
+        userType = getIntent().getStringExtra("userType");
+        action = getIntent().getStringExtra("action");
 
-        // Check if user is already logged in
+        if (userType == null) userType = "Customers";
+
+        fragmentManager = getSupportFragmentManager();
+
+        // Check if user is already logged in (should not happen here)
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            Log.d(TAG, "User already logged in: " + currentUser.getUid());
+            Log.d(TAG, "User already logged in, going to LauncherActivity");
             startActivity(new Intent(AuthenticationActivity.this, LauncherActivity.class));
             finish();
-        } else {
-            loadFragment(new MenuFragment(), "MenuFragment", false);
+            return;
         }
+
+        // Show the menu fragment with login/register options
+        showMenu();
     }
 
-    private void setupAuthListener() {
-        authStateListener = firebaseAuth -> {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user != null && !isFinishing()) {
-                Log.d(TAG, "User logged in, redirecting");
-                startActivity(new Intent(AuthenticationActivity.this, LauncherActivity.class));
-                finish();
-            }
-        };
+    public void showLogin() {
+        LoginFragment fragment = new LoginFragment();
+        Bundle args = new Bundle();
+        args.putString("userType", userType);
+        fragment.setArguments(args);
+        loadFragment(fragment, "LoginFragment", true);
     }
 
-    public void loadFragment(Fragment fragment, String tag, boolean addToBackStack) {
+    public void showRegister() {
+        RegisterFragment fragment = new RegisterFragment();
+        Bundle args = new Bundle();
+        args.putString("userType", userType);
+        fragment.setArguments(args);
+        loadFragment(fragment, "RegisterFragment", true);
+    }
+
+    public void showMenu() {
+        MenuFragment fragment = new MenuFragment();
+        loadFragment(fragment, "MenuFragment", false);
+    }
+
+    private void loadFragment(Fragment fragment, String tag, boolean addToBackStack) {
         FragmentTransaction transaction = fragmentManager.beginTransaction()
                 .replace(R.id.container, fragment, tag);
         if (addToBackStack) {
@@ -61,28 +79,14 @@ public class AuthenticationActivity extends AppCompatActivity {
         transaction.commit();
     }
 
-    public void showLogin() {
-        loadFragment(new LoginFragment(), "LoginFragment", true);
-    }
-
-    public void showRegistration() {
-        loadFragment(new RegisterFragment(), "RegisterFragment", true);
-    }
-
-    public void showMenu() {
-        fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-        loadFragment(new MenuFragment(), "MenuFragment", false);
-    }
-
     @Override
-    protected void onStart() {
-        super.onStart();
-        FirebaseAuth.getInstance().addAuthStateListener(authStateListener);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        FirebaseAuth.getInstance().removeAuthStateListener(authStateListener);
+    public void onBackPressed() {
+        if (fragmentManager.getBackStackEntryCount() > 0) {
+            fragmentManager.popBackStack();
+        } else {
+            // Go back to role selection instead of exiting
+            startActivity(new Intent(AuthenticationActivity.this, RoleSelectionActivity.class));
+            finish();
+        }
     }
 }

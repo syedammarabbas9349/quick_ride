@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.quickride.R;
 import com.example.quickride.adapters.HistoryAdapter;
 import com.example.quickride.models.RideHistory;
-import com.google.android.material.progressindicator.CircularProgressIndicator;
+import android.widget.ProgressBar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -39,12 +39,12 @@ public class HistoryActivity extends AppCompatActivity {
     private HistoryAdapter historyAdapter;
     private List<RideHistory> historyList = new ArrayList<>();
     private LinearLayout emptyLayout;
-    private CircularProgressIndicator progressBar;
+    private ProgressBar progressBar;
     private Toolbar toolbar;
     private TextView tvUserType;
 
-    private String userType; // "Customers" or "Drivers"
-    private String idField; // "customerId" or "driverId"
+    private String userType;
+    private String idField;
     private String currentUserId;
 
     @Override
@@ -93,11 +93,16 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void getUserData() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            finish();
+            return;
+        }
+
         currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         userType = getIntent().getStringExtra("userType");
 
         if (userType == null) {
-            userType = "Customers"; // Default
+            userType = "Customers";
         }
 
         if (userType.equals("Drivers")) {
@@ -163,75 +168,94 @@ public class HistoryActivity extends AppCompatActivity {
         RideHistory ride = new RideHistory();
         ride.setRideId(snapshot.getKey());
 
-        // Parse basic info
+        // Timestamp
         if (snapshot.child("timestamp").getValue() != null) {
-            ride.setTimestamp(snapshot.child("timestamp").getValue(Long.class));
+            ride.setTimestamp(Long.parseLong(snapshot.child("timestamp").getValue().toString()));
         }
 
-        // Parse customer info
+        // Customer
         if (snapshot.child("customerId").getValue() != null) {
             ride.setCustomerId(snapshot.child("customerId").getValue(String.class));
         }
+
         if (snapshot.child("customerName").getValue() != null) {
             ride.setCustomerName(snapshot.child("customerName").getValue(String.class));
         }
+
         if (snapshot.child("customerPhone").getValue() != null) {
             ride.setCustomerPhone(snapshot.child("customerPhone").getValue(String.class));
         }
+
         if (snapshot.child("customerImageUrl").getValue() != null) {
             ride.setCustomerImageUrl(snapshot.child("customerImageUrl").getValue(String.class));
         }
 
-        // Parse driver info
+        // Driver
         if (snapshot.child("driverId").getValue() != null) {
             ride.setDriverId(snapshot.child("driverId").getValue(String.class));
         }
+
         if (snapshot.child("driverName").getValue() != null) {
             ride.setDriverName(snapshot.child("driverName").getValue(String.class));
         }
+
         if (snapshot.child("driverPhone").getValue() != null) {
             ride.setDriverPhone(snapshot.child("driverPhone").getValue(String.class));
         }
+
         if (snapshot.child("driverImageUrl").getValue() != null) {
             ride.setDriverImageUrl(snapshot.child("driverImageUrl").getValue(String.class));
         }
+
         if (snapshot.child("car").getValue() != null) {
             ride.setCarInfo(snapshot.child("car").getValue(String.class));
         }
 
-        // Parse ride details
+        // Addresses
         if (snapshot.child("pickupAddress").getValue() != null) {
             ride.setPickupAddress(snapshot.child("pickupAddress").getValue(String.class));
         }
+
         if (snapshot.child("destinationAddress").getValue() != null) {
             ride.setDestinationAddress(snapshot.child("destinationAddress").getValue(String.class));
         }
+
+        // Coordinates
         if (snapshot.child("pickupLat").getValue() != null) {
-            ride.setPickupLat(snapshot.child("pickupLat").getValue(Double.class));
+            ride.setPickupLat(Double.parseDouble(snapshot.child("pickupLat").getValue().toString()));
         }
+
         if (snapshot.child("pickupLng").getValue() != null) {
-            ride.setPickupLng(snapshot.child("pickupLng").getValue(Double.class));
+            ride.setPickupLng(Double.parseDouble(snapshot.child("pickupLng").getValue().toString()));
         }
+
         if (snapshot.child("destLat").getValue() != null) {
-            ride.setDestLat(snapshot.child("destLat").getValue(Double.class));
+            ride.setDestLat(Double.parseDouble(snapshot.child("destLat").getValue().toString()));
         }
+
         if (snapshot.child("destLng").getValue() != null) {
-            ride.setDestLng(snapshot.child("destLng").getValue(Double.class));
+            ride.setDestLng(Double.parseDouble(snapshot.child("destLng").getValue().toString()));
         }
+
+        // Ride details
         if (snapshot.child("distance").getValue() != null) {
-            ride.setDistance(snapshot.child("distance").getValue(Double.class));
+            ride.setDistance(Double.parseDouble(snapshot.child("distance").getValue().toString()));
         }
+
         if (snapshot.child("fare").getValue() != null) {
-            ride.setFare(snapshot.child("fare").getValue(Double.class));
+            ride.setFare(Double.parseDouble(snapshot.child("fare").getValue().toString()));
         }
+
         if (snapshot.child("paymentMethod").getValue() != null) {
             ride.setPaymentMethod(snapshot.child("paymentMethod").getValue(String.class));
         }
+
         if (snapshot.child("status").getValue() != null) {
             ride.setStatus(snapshot.child("status").getValue(String.class));
         }
+
         if (snapshot.child("rating").getValue() != null) {
-            ride.setRating(snapshot.child("rating").getValue(Double.class));
+            ride.setRating(Double.parseDouble(snapshot.child("rating").getValue().toString()));
         }
 
         return ride;

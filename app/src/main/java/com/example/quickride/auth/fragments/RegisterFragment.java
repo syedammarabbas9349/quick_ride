@@ -1,5 +1,6 @@
 package com.example.quickride.auth.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -17,30 +18,30 @@ import androidx.fragment.app.Fragment;
 import com.example.quickride.R;
 import com.example.quickride.auth.AuthenticationActivity;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Fragment for new user registration
- */
 public class RegisterFragment extends Fragment {
 
     private EditText etName, etEmail, etPassword, etConfirmPassword;
     private Button btnRegister, btnBack;
     private ProgressBar progressBar;
-
     private FirebaseAuth mAuth;
-    private DatabaseReference databaseRef;
     private AuthenticationActivity activity;
+    private String userType;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_register, container, false);
+
+        // Get user type from arguments
+        if (getArguments() != null) {
+            userType = getArguments().getString("userType", "Customers");
+        }
 
         initializeViews(view);
         setupFirebase();
@@ -53,7 +54,6 @@ public class RegisterFragment extends Fragment {
         etEmail = view.findViewById(R.id.etEmail);
         etPassword = view.findViewById(R.id.etPassword);
         etConfirmPassword = view.findViewById(R.id.etConfirmPassword);
-
         btnRegister = view.findViewById(R.id.btnRegister);
         btnBack = view.findViewById(R.id.btnBack);
         progressBar = view.findViewById(R.id.progressBar);
@@ -72,7 +72,6 @@ public class RegisterFragment extends Fragment {
 
     private void setupFirebase() {
         mAuth = FirebaseAuth.getInstance();
-        databaseRef = FirebaseDatabase.getInstance().getReference();
     }
 
     private void attemptRegistration() {
@@ -81,7 +80,6 @@ public class RegisterFragment extends Fragment {
         String password = etPassword.getText().toString().trim();
         String confirmPassword = etConfirmPassword.getText().toString().trim();
 
-        // Validate inputs
         if (TextUtils.isEmpty(name)) {
             etName.setError("Name required");
             return;
@@ -105,14 +103,11 @@ public class RegisterFragment extends Fragment {
             return;
         }
 
-        // Show loading
         showLoading(true);
 
-        // Create user in Firebase Auth
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // Registration successful, save user data to database
                         saveUserData(name, email);
                     } else {
                         showLoading(false);
@@ -126,23 +121,40 @@ public class RegisterFragment extends Fragment {
     private void saveUserData(String name, String email) {
         String userId = mAuth.getCurrentUser().getUid();
 
-        // Default to Customers (can be changed in DetailsActivity)
-        String userType = "Customers";
-
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("name", name);
         userMap.put("email", email);
         userMap.put("profileImageUrl", "default");
         userMap.put("createdAt", System.currentTimeMillis());
 
-        databaseRef.child("Users").child(userType).child(userId)
+        // Add role-specific fields
+        if (userType.equals("Drivers")) {
+            userMap.put("car", "");
+            userMap.put("vehicleType", "");
+            userMap.put("licensePlate", "");
+            userMap.put("rating", 5.0);
+            userMap.put("totalRides", 0);
+            userMap.put("isOnline", false);
+        }
+
+        FirebaseDatabase.getInstance()
+                .getReference()
+                .child("Users")
+                .child(userType)
+                .child(userId)
                 .setValue(userMap)
                 .addOnCompleteListener(task -> {
                     showLoading(false);
-
                     if (task.isSuccessful()) {
-                        Toast.makeText(getContext(), "Registration successful", Toast.LENGTH_SHORT).show();
-                        // Auth listener in Activity will handle redirect
+                        Toast.makeText(getContext(), "Registration successful! Please login.", Toast.LENGTH_LONG).show();
+
+                        // Sign out so user can login with new credentials
+                        mAuth.signOut();
+
+                        // Go back to login fragment
+                        if (activity != null) {
+                            activity.showLogin();
+                        }
                     } else {
                         Toast.makeText(getContext(), "Error saving user data", Toast.LENGTH_SHORT).show();
                     }

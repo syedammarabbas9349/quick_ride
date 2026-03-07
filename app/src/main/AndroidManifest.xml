@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.quickride">
-
     <!-- Permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -17,7 +16,9 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
+        <activity
+            android:name=".auth.RoleSelectionActivity"
+            android:exported="false" />
         <!-- Launcher Activity -->
         <activity
             android:name=".auth.LauncherActivity"
@@ -25,37 +26,25 @@
             android:theme="@style/AppTheme.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Auth Activities -->
         <activity android:name=".auth.AuthenticationActivity" />
         <activity android:name=".auth.DetailsActivity" />
-
-        <!-- Customer Activities -->
         <activity android:name=".customer.CustomerMapActivity" />
         <activity android:name=".customer.CustomerSettingsActivity" />
-
-        <!-- Driver Activities -->
         <activity android:name=".driver.DriverMapActivity" />
         <activity android:name=".driver.DriverSettingsActivity" />
         <activity android:name=".driver.DriverChooseTypeActivity" />
-
-        <!-- History Activities -->
         <activity android:name=".history.HistoryActivity" />
         <activity android:name=".history.HistorySingleActivity" />
-
-        <!-- Payment Activities -->
         <activity android:name=".payment.PaymentActivity" />
         <activity android:name=".payment.AddPaymentActivity" />
         <activity android:name=".payment.PayoutActivity" />
-
-        <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
-
     </application>
 
 </manifest>
