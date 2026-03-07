@@ -53,15 +53,12 @@ public class DriverSettingsActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private DatabaseReference mDriverDatabase;
-    private DatabaseReference mPayoutDatabase;
 
     private String userID;
     private String mName, mPhone, mCar;
     private Uri resultUri;
 
-    private RecyclerView payoutRecyclerView;
-    private PayoutAdapter payoutAdapter;
-    private List<Payout> payoutList = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +68,6 @@ public class DriverSettingsActivity extends AppCompatActivity {
         initializeViews();
         setupFirebase();
         getUserInfo();
-        setupPayoutRecyclerView();
-        loadPayoutHistoryFromFirebase();
 
         mProfileImage.setOnClickListener(view -> {
             Intent intent = new Intent(Intent.ACTION_PICK);
@@ -98,7 +93,6 @@ public class DriverSettingsActivity extends AppCompatActivity {
         mConfirm = findViewById(R.id.confirm);
         mChooseType = findViewById(R.id.chooseType);
         mProgressBar = findViewById(R.id.progressBar);
-        payoutRecyclerView = findViewById(R.id.payoutRecyclerView);
     }
 
     private void setupFirebase() {
@@ -112,8 +106,7 @@ public class DriverSettingsActivity extends AppCompatActivity {
         userID = mAuth.getCurrentUser().getUid();
         mDriverDatabase = FirebaseDatabase.getInstance().getReference()
                 .child("Users").child("Drivers").child(userID);
-        mPayoutDatabase = FirebaseDatabase.getInstance().getReference()
-                .child("Payouts").child(userID);
+
     }
 
     private void getUserInfo() {
@@ -238,210 +231,6 @@ public class DriverSettingsActivity extends AppCompatActivity {
             finish();
         }
     }
-
-    private void setupPayoutRecyclerView() {
-        RecyclerView payoutRecyclerView = findViewById(R.id.payoutRecyclerView);
-        List<Payout> payoutList = new ArrayList<>();
-
-        // Sample data - replace with Firebase data
-        Payout payout1 = new Payout();
-        payout1.setPeriod("Week 12, 2024");
-        payout1.setAmount(12500.0);
-        payout1.setRideCount(25);
-        payout1.setStatus("available");
-        payout1.setRequestedAt(System.currentTimeMillis() - 86400000);
-        payoutList.add(payout1);
-
-        Payout payout2 = new Payout();
-        payout2.setPeriod("Week 11, 2024");
-        payout2.setAmount(10800.0);
-        payout2.setRideCount(22);
-        payout2.setStatus("pending");
-        payout2.setRequestedAt(System.currentTimeMillis() - 172800000);
-        payoutList.add(payout2);
-
-        Payout payout3 = new Payout();
-        payout3.setPeriod("Week 10, 2024");
-        payout3.setAmount(9500.0);
-        payout3.setRideCount(19);
-        payout3.setStatus("paid");
-        payout3.setRequestedAt(System.currentTimeMillis() - 604800000);
-        payoutList.add(payout3);
-
-        PayoutAdapter adapter = new PayoutAdapter(payoutList, this, new PayoutAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(Payout payout, int position) {
-                // Handle item click
-                showPayoutDetails(payout);
-            }
-
-            @Override
-            public void onWithdrawClick(Payout payout, int position) {
-                // Handle withdraw button click
-                showWithdrawDialog(payout, position);
-            }
-        });
-
-        payoutRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        payoutRecyclerView.setAdapter(adapter);
-    }
-
-    private void showPayoutDetails(Payout payout) {
-        new AlertDialog.Builder(this)
-                .setTitle("Payout Details")
-                .setMessage(
-                        "Period: " + payout.getPeriod() + "\n" +
-                                "Amount: Rs. " + payout.getAmount() + "\n" +
-                                "Rides: " + payout.getRideCount() + "\n" +
-                                "Status: " + payout.getStatus()
-                )
-                .setPositiveButton("OK", null)
-                .show();
-    }
-
-    private void showWithdrawDialog(Payout payout, int position) {
-        new AlertDialog.Builder(this)
-                .setTitle("Withdraw Earnings")
-                .setMessage("Request withdrawal of Rs. " + payout.getAmount() + "?")
-                .setPositiveButton("Confirm", (dialog, which) -> {
-                    // Update payout status in Firebase
-                    Toast.makeText(this, "Withdrawal requested for Rs. " + payout.getAmount(), Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void loadPayoutHistoryFromFirebase() {
-        mProgressBar.setVisibility(View.VISIBLE);
-
-        // Query payouts ordered by period (newest first)
-        Query query = mPayoutDatabase.orderByChild("period").limitToLast(20);
-
-        query.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                payoutList.clear();
-
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    Payout payout = dataSnapshot.getValue(Payout.class);
-                    if (payout != null) {
-                        payout.setPayoutId(dataSnapshot.getKey());
-                        payoutList.add(0, payout); // Add at beginning for reverse order
-                    }
-                }
-
-                payoutAdapter.notifyDataSetChanged();
-                mProgressBar.setVisibility(View.GONE);
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                mProgressBar.setVisibility(View.GONE);
-                Toast.makeText(DriverSettingsActivity.this,
-                        "Error loading payouts: " + error.getMessage(),
-                        Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void showPayoutDetailsDialog(Payout payout) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-
-        new AlertDialog.Builder(this)
-                .setTitle("Payout Details")
-                .setMessage(
-                        "Period: " + payout.getPeriod() + "\n" +
-                                "Amount: Rs. " + payout.getAmount() + "\n" +
-                                "Rides: " + payout.getRideCount() + "\n" +
-                                "Status: " + payout.getStatus() + "\n" +
-                                (payout.getTransactionId() != null && !payout.getTransactionId().isEmpty() ?
-                                        "Transaction ID: " + payout.getTransactionId() + "\n" : "") +
-                                (payout.getProcessedAt() > 0 ?
-                                        "Processed: " + sdf.format(new Date(payout.getProcessedAt())) : "")
-                )
-                .setPositiveButton("OK", null)
-                .show();
-    }
-
-    private void checkPaymentMethods(Payout payout) {
-        DatabaseReference paymentMethodsRef = FirebaseDatabase.getInstance().getReference()
-                .child("Users").child("Drivers").child(userID).child("paymentMethods");
-
-        paymentMethodsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists() && snapshot.getChildrenCount() > 0) {
-                    // User has payment methods, proceed with withdrawal
-                    processWithdrawal(payout);
-                } else {
-                    // No payment methods, prompt to add one
-                    new AlertDialog.Builder(DriverSettingsActivity.this)
-                            .setTitle("No Payment Method")
-                            .setMessage("Please add a payment method (JazzCash/EasyPaisa) before withdrawing.")
-                            .setPositiveButton("Add Now", (dialog, which) -> {
-                                // Navigate to add payment activity
-                                Intent intent = new Intent(DriverSettingsActivity.this,
-                                        AddPaymentActivity.class);
-                                startActivity(intent);
-                            })
-                            .setNegativeButton("Later", null)
-                            .show();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(DriverSettingsActivity.this,
-                        "Error checking payment methods: " + error.getMessage(),
-                        Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void processWithdrawal(Payout payout) {
-        new AlertDialog.Builder(DriverSettingsActivity.this)
-                .setTitle("Confirm Withdrawal")
-                .setMessage("Request withdrawal of Rs. " + payout.getAmount() + "?\n\n" +
-                        "This will be processed within 2-3 business days.")
-                .setPositiveButton("Confirm", (dialog, which) -> {
-                    mProgressBar.setVisibility(View.VISIBLE);
-
-                    // Update payout status in Firebase
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("status", "pending");
-                    updates.put("requestedAt", System.currentTimeMillis());
-
-                    mPayoutDatabase.child(payout.getPayoutId()).updateChildren(updates)
-                            .addOnSuccessListener(aVoid -> {
-                                mProgressBar.setVisibility(View.GONE);
-                                Toast.makeText(DriverSettingsActivity.this,
-                                        "Withdrawal request submitted successfully",
-                                        Toast.LENGTH_LONG).show();
-
-                                // Update local list - find and update the specific payout
-                                for (int i = 0; i < payoutList.size(); i++) {
-                                    if (payoutList.get(i).getPayoutId().equals(payout.getPayoutId())) {
-                                        payoutList.get(i).setStatus("pending");
-                                        payoutList.get(i).setRequestedAt(System.currentTimeMillis());
-                                        payoutAdapter.notifyItemChanged(i);
-                                        break;
-                                    }
-                                }
-                            })
-                            .addOnFailureListener(e -> {
-                                mProgressBar.setVisibility(View.GONE);
-                                Toast.makeText(DriverSettingsActivity.this,
-                                        "Error: " + e.getMessage(),
-                                        Toast.LENGTH_SHORT).show();
-                            });
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

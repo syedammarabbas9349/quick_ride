@@ -1,5 +1,8 @@
 package com.example.quickride.driver;
 
+import com.google.android.material.navigation.NavigationView;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -86,13 +89,12 @@ public class DriverMapActivity extends AppCompatActivity implements
 
     private static final String TAG = "DriverMapActivity";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 100;
-    private static final int MAX_SEARCH_DISTANCE = 20;
+    private static final int MAX_SEARCH_DISTANCE = 5;
 
     // UI Components
     private GoogleMap mMap;
     private DrawerLayout drawer;
-    private Toolbar toolbar;
-    private ListView drawerList;
+    private NavigationView navigationView;
     private ImageView drawerButton;
     private ImageView customerProfileImage;
     private Switch workingSwitch;
@@ -140,7 +142,6 @@ public class DriverMapActivity extends AppCompatActivity implements
     private int[] drawerIcons = {
             R.drawable.ic_history_24dp,
             R.drawable.ic_earnings_24dp,
-            R.drawable.ic_payment_24dp,
             R.drawable.ic_settings_24dp,
             R.drawable.ic_help_24dp,
             R.drawable.ic_logout
@@ -153,7 +154,7 @@ public class DriverMapActivity extends AppCompatActivity implements
 
         initializeViews();
         setupToolbar();
-        setupDrawer();
+        setupDrawerMenu();
         setupFirebase();
         setupLocation();
         setupMap();
@@ -166,9 +167,11 @@ public class DriverMapActivity extends AppCompatActivity implements
 
     private void initializeViews() {
         drawer = findViewById(R.id.drawer_layout);
-        toolbar = findViewById(R.id.toolbar);
-        drawerList = findViewById(R.id.drawer_list);
         drawerButton = findViewById(R.id.drawerButton);
+        navigationView = findViewById(R.id.navigationView);
+        View headerView = navigationView.getHeaderView(0);
+        driverNameHeader = headerView.findViewById(R.id.driverNameDrawer);
+        driverStatusHeader = headerView.findViewById(R.id.driverStatusDrawer);
         workingSwitch = findViewById(R.id.workingSwitch);
         rideStatusButton = findViewById(R.id.rideStatus);
         fabMaps = findViewById(R.id.openMaps);
@@ -185,93 +188,33 @@ public class DriverMapActivity extends AppCompatActivity implements
     }
 
     private void setupToolbar() {
-        setSupportActionBar(toolbar);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar,
-                R.string.navigation_drawer_open,
-                R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
-
-        drawerButton.setOnClickListener(v -> drawer.openDrawer(Gravity.LEFT));
+        if (drawerButton != null) {
+            drawerButton.setOnClickListener(v ->
+                    drawer.openDrawer(GravityCompat.START));
+        }
     }
+    private void setupDrawerMenu() {
 
-    private void setupDrawer() {
-        // Get drawer items from resources
-        drawerItems = getResources().getStringArray(R.array.drawer_items_driver);
+        navigationView.setNavigationItemSelectedListener(item -> {
 
-        // Set up adapter
-        DrawerAdapter drawerAdapter = new DrawerAdapter(this, drawerItems, drawerIcons);
-        drawerList.setAdapter(drawerAdapter);
+            int id = item.getItemId();
 
-        // Add header to ListView
-        View headerView = getLayoutInflater().inflate(R.layout.nav_header_driver, null);
-        drawerList.addHeaderView(headerView);
-
-        // Get header views
-        driverNameHeader = headerView.findViewById(R.id.driverNameDrawer);
-        driverStatusHeader = headerView.findViewById(R.id.driverStatusDrawer);
-
-        // Set item click listener
-        drawerList.setOnItemClickListener((parent, view, position, id) -> {
-            // The header is at position 0, so actual items start at position 1
-            int actualPosition = position - 1;
-
-            Log.d(TAG, "Drawer clicked - Raw position: " + position + ", Actual position: " + actualPosition);
-
-            if (actualPosition >= 0 && actualPosition < drawerItems.length) {
-                drawerAdapter.setSelectedPosition(actualPosition);
-                handleDrawerItemClick(actualPosition);
-            } else {
-                Log.e(TAG, "Invalid drawer position: " + actualPosition);
+            if (id == R.id.history) {
+                startActivity(new Intent(this, HistoryActivity.class)
+                        .putExtra("userType", "Drivers"));
+            } else if (id == R.id.earnings) {
+                startActivity(new Intent(this, PayoutActivity.class));
+            } else if (id == R.id.settings) {
+                startActivity(new Intent(this, DriverSettingsActivity.class));
+            } else if (id == R.id.help) {
+                Toast.makeText(this, "Help coming soon", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.logout) {
+                showLogoutDialog();
             }
 
             drawer.closeDrawer(GravityCompat.START);
+            return true;
         });
-    }
-
-    private void handleDrawerItemClick(int position) {
-        Log.d(TAG, "Handling drawer item at position: " + position);
-
-        switch (position) {
-            case 0: // History
-                Log.d(TAG, "Opening History");
-                startActivity(new Intent(DriverMapActivity.this, HistoryActivity.class)
-                        .putExtra("userType", "Drivers"));
-                break;
-
-            case 1: // Earnings
-                Log.d(TAG, "Earnings clicked");
-                Toast.makeText(this, "Earnings clicked", Toast.LENGTH_SHORT).show();
-                // You can add earnings activity here later
-                break;
-
-            case 2: // Payout
-                Log.d(TAG, "Opening Payout");
-                startActivity(new Intent(DriverMapActivity.this, PayoutActivity.class));
-                break;
-
-            case 3: // Settings
-                Log.d(TAG, "Opening Settings");
-                startActivity(new Intent(DriverMapActivity.this, DriverSettingsActivity.class));
-                break;
-
-            case 4: // Help
-                Log.d(TAG, "Help clicked");
-                Toast.makeText(this, "Help clicked", Toast.LENGTH_SHORT).show();
-                // You can add help activity here later
-                break;
-
-            case 5: // Logout
-                Log.d(TAG, "Logout clicked");
-                showLogoutDialog();
-                break;
-
-            default:
-                Log.e(TAG, "Unknown drawer position: " + position);
-                Toast.makeText(this, "Unknown option", Toast.LENGTH_SHORT).show();
-                break;
-        }
     }
 
     private void showLogoutDialog() {
@@ -300,6 +243,12 @@ public class DriverMapActivity extends AppCompatActivity implements
         Log.d(TAG, "setupFirebase started");
 
         try {
+            if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+                startActivity(new Intent(this, LauncherActivity.class));
+                finish();
+                return;
+            }
+
             String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
             driverRef = FirebaseDatabase.getInstance()
                     .getReference()
@@ -953,7 +902,10 @@ public class DriverMapActivity extends AppCompatActivity implements
     }
 
     private void callCustomer() {
-        if (currentRide == null || currentRide.getCustomerPhone() == null) return;
+        if (currentRide == null || currentRide.getCustomerPhone() == null || currentRide.getCustomerPhone().isEmpty()) {
+            Toast.makeText(this,"Customer phone not available",Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -1079,7 +1031,9 @@ public class DriverMapActivity extends AppCompatActivity implements
         Log.d(TAG, "Map is ready");
 
         if (checkLocationPermission()) {
-            mMap.setMyLocationEnabled(true);
+            if (checkLocationPermission()) {
+                mMap.setMyLocationEnabled(true);
+            }
         }
     }
 

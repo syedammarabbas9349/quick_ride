@@ -1,47 +1,186 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    android:background="#F5F5F5"
-    tools:openDrawer="start"
-    tools:context=".driver.DriverMapActivity">
+    android:layout_height="match_parent">
 
-
-    <include
-        layout="@layout/activity_driver_content"
+    <!-- MAIN CONTENT -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
 
-    <!-- Navigation Drawer -->
-    <LinearLayout
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- MAP -->
+            <fragment
+                android:id="@+id/map"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+            <!-- MENU BUTTON -->
+            <ImageView
+                android:id="@+id/drawerButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_margin="16dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:src="@drawable/ic_menu_black_24dp"
+                android:background="@android:color/white"
+                android:padding="8dp"
+                android:elevation="8dp"/>
+
+            <!-- ONLINE SWITCH -->
+            <Switch
+                android:id="@+id/workingSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:layout_below="@id/drawerButton"
+                android:text="Online"/>
+
+            <!-- PULL HANDLE -->
+            <LinearLayout
+                android:id="@+id/bringUpBottomLayout"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_alignParentBottom="true"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@android:color/white"
+                android:elevation="8dp">
+
+                <View
+                    android:layout_width="36dp"
+                    android:layout_height="4dp"
+                    android:background="@drawable/bottom_sheet_handle"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/pullUpCustomerName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No Active Ride"
+                    android:textSize="14sp"
+                    android:textColor="#757575"/>
+
+            </LinearLayout>
+
+            <!-- BOTTOM SHEET -->
+            <LinearLayout
+                android:id="@+id/bottomSheet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:orientation="vertical"
+                android:background="@android:color/white"
+                android:elevation="16dp"
+                android:visibility="gone"
+                android:padding="16dp">
+
+                <!-- CUSTOMER INFO -->
+                <LinearLayout
+                    android:id="@+id/customerInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:text="Current Ride"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="16dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <ImageView
+                        android:id="@+id/customerProfileImage"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_marginBottom="8dp"
+                        android:src="@drawable/default_profile"
+                        android:background="@drawable/circle_bg"
+                        android:scaleType="centerCrop"/>
+
+                    <TextView
+                        android:id="@+id/customerName"
+                        android:text="Customer Name"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/pickupAddress"
+                        android:text="Pickup Location"
+                        android:textSize="14sp"
+                        android:textColor="#757575"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <Button
+                        android:id="@+id/openMaps"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Navigate"/>
+
+                    <Button
+                        android:id="@+id/phone"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Call"/>
+
+                    <Button
+                        android:id="@+id/cancel"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Cancel Ride"
+                        android:backgroundTint="#F44336"/>
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/requestsRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/noRequestsText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No ride requests available"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:visibility="gone"/>
+
+                <Button
+                    android:id="@+id/rideStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Pickup Customer"/>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+
+    <!-- DRAWER MENU -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationView"
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:orientation="vertical"
-        android:background="@android:color/white">
-
-        <!-- Header -->
-        <include layout="@layout/nav_header_driver" />
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#E0E0E0" />
-
-        <!-- Drawer Items List -->
-        <ListView
-            android:id="@+id/drawer_list"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:divider="#E0E0E0"
-            android:dividerHeight="1dp"
-            android:choiceMode="singleChoice" />
-
-    </LinearLayout>
+        android:background="@android:color/white"
+        app:headerLayout="@layout/nav_header_driver"
+        app:menu="@menu/driver_menu"/>
 
 </androidx.drawerlayout.widget.DrawerLayout>

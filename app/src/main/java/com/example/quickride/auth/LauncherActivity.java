@@ -23,7 +23,7 @@ import com.google.firebase.database.ValueEventListener;
 public class LauncherActivity extends AppCompatActivity {
 
     private static final String TAG = "LauncherActivity";
-    private static final int SPLASH_DELAY = 1500;
+    private static final int SPLASH_DELAY = 1000;
     private FirebaseAuth mAuth;
 
     @Override
