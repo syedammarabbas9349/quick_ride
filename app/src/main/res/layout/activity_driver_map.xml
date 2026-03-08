@@ -26,51 +26,72 @@
             <!-- MENU BUTTON -->
             <ImageView
                 android:id="@+id/drawerButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_margin="16dp"
                 android:layout_alignParentStart="true"
                 android:layout_alignParentTop="true"
                 android:src="@drawable/ic_menu_black_24dp"
-                android:background="@android:color/white"
-                android:padding="8dp"
+                android:background="@drawable/circle_bg_white"
+                android:padding="12dp"
                 android:elevation="8dp"/>
 
             <!-- ONLINE SWITCH -->
-            <Switch
-                android:id="@+id/workingSwitch"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
                 android:layout_below="@id/drawerButton"
-                android:text="Online"/>
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:background="@drawable/rounded_bg_white"
+                android:elevation="6dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Online"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="6dp"/>
+
+                <Switch
+                    android:id="@+id/workingSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
 
             <!-- PULL HANDLE -->
             <LinearLayout
                 android:id="@+id/bringUpBottomLayout"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="64dp"
                 android:layout_alignParentBottom="true"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:background="@android:color/white"
-                android:elevation="8dp">
+                android:background="@drawable/bottom_sheet_background"
+                android:elevation="10dp">
 
                 <View
-                    android:layout_width="36dp"
+                    android:layout_width="40dp"
                     android:layout_height="4dp"
                     android:background="@drawable/bottom_sheet_handle"
-                    android:layout_marginBottom="4dp"/>
+                    android:layout_marginBottom="6dp"/>
 
                 <TextView
                     android:id="@+id/pullUpCustomerName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="No Active Ride"
-                    android:textSize="14sp"
-                    android:textColor="#757575"/>
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#616161"/>
 
             </LinearLayout>
+
 
             <!-- BOTTOM SHEET -->
             <LinearLayout
@@ -79,10 +100,11 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:orientation="vertical"
-                android:background="@android:color/white"
-                android:elevation="16dp"
+                android:background="@drawable/bottom_sheet_background"
+                android:elevation="14dp"
                 android:visibility="gone"
-                android:padding="16dp">
+                android:padding="18dp">
+
 
                 <!-- CUSTOMER INFO -->
                 <LinearLayout
@@ -93,63 +115,72 @@
                     android:visibility="gone">
 
                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="Current Ride"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:layout_marginBottom="16dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:layout_marginBottom="16dp"/>
 
                     <ImageView
                         android:id="@+id/customerProfileImage"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:layout_marginBottom="8dp"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:layout_marginBottom="12dp"
                         android:src="@drawable/default_profile"
                         android:background="@drawable/circle_bg"
                         android:scaleType="centerCrop"/>
 
                     <TextView
                         android:id="@+id/customerName"
-                        android:text="Customer Name"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content"
+                        android:text="Customer Name"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp"/>
 
                     <TextView
                         android:id="@+id/pickupAddress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="Pickup Location"
                         android:textSize="14sp"
                         android:textColor="#757575"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:layout_marginBottom="16dp"/>
 
                     <Button
                         android:id="@+id/openMaps"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:text="Navigate"/>
+                        android:text="Navigate"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/button_primary"/>
 
                     <Button
                         android:id="@+id/phone"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:text="Call"/>
+                        android:text="Call"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/button_primary"/>
 
                     <Button
                         android:id="@+id/cancel"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:text="Cancel Ride"
-                        android:backgroundTint="#F44336"/>
+                        android:background="@drawable/button_danger"/>
 
                 </LinearLayout>
 
+
+                <!-- REQUEST LIST -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/requestsRecyclerView"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"/>
 
                 <TextView
                     android:id="@+id/noRequestsText"
@@ -158,13 +189,17 @@
                     android:text="No ride requests available"
                     android:gravity="center"
                     android:padding="32dp"
+                    android:textColor="#757575"
                     android:visibility="gone"/>
 
                 <Button
                     android:id="@+id/rideStatus"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:text="Pickup Customer"/>
+                    android:text="Pickup Customer"
+                    android:textStyle="bold"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/button_primary"/>
 
             </LinearLayout>
 

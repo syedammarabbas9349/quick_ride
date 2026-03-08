@@ -22,9 +22,9 @@ import java.util.Locale;
 
 public class PayoutAdapter extends RecyclerView.Adapter<PayoutAdapter.ViewHolder> {
 
-    private List<Payout> payoutList;
-    private OnItemClickListener listener;
-    private Context context;
+    private final List<Payout> payoutList;
+    private final OnItemClickListener listener;
+    private final Context context;
 
     // Define the interface
     public interface OnItemClickListener {

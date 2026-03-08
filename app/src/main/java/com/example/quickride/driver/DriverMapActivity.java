@@ -91,7 +91,6 @@ public class DriverMapActivity extends AppCompatActivity implements
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 100;
     private static final int MAX_SEARCH_DISTANCE = 5;
 
-    // UI Components
     private GoogleMap mMap;
     private DrawerLayout drawer;
     private NavigationView navigationView;
@@ -200,15 +199,24 @@ public class DriverMapActivity extends AppCompatActivity implements
             int id = item.getItemId();
 
             if (id == R.id.history) {
+
                 startActivity(new Intent(this, HistoryActivity.class)
                         .putExtra("userType", "Drivers"));
+
             } else if (id == R.id.earnings) {
+
                 startActivity(new Intent(this, PayoutActivity.class));
+
             } else if (id == R.id.settings) {
+
                 startActivity(new Intent(this, DriverSettingsActivity.class));
+
             } else if (id == R.id.help) {
+
                 Toast.makeText(this, "Help coming soon", Toast.LENGTH_SHORT).show();
+
             } else if (id == R.id.logout) {
+
                 showLogoutDialog();
             }
 
@@ -427,23 +435,32 @@ public class DriverMapActivity extends AppCompatActivity implements
     }
 
     private void goOnline() {
+
+        if (currentDriver == null || currentDriver.getVehicleType() == null) {
+            Toast.makeText(this, "Please select vehicle type first", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(this, DriverChooseTypeActivity.class));
+
+            if (workingSwitch != null) workingSwitch.setChecked(false);
+            return;
+        }
+
         if (!checkLocationPermission()) {
             if (workingSwitch != null) workingSwitch.setChecked(false);
             return;
         }
 
         if (workingSwitch != null) workingSwitch.setChecked(true);
+
         startLocationUpdates();
 
-        if (mMap != null) {
-            if (checkLocationPermission()) {
-                mMap.setMyLocationEnabled(true);
-            }
+        if (mMap != null && checkLocationPermission()) {
+            mMap.setMyLocationEnabled(true);
         }
 
         if (driverStatusHeader != null) {
             driverStatusHeader.setText(R.string.online);
         }
+
         if (drawer != null) {
             Snackbar.make(drawer, R.string.you_are_online, Snackbar.LENGTH_SHORT).show();
         }
@@ -920,27 +937,39 @@ public class DriverMapActivity extends AppCompatActivity implements
     }
 
     private void loadDriverData() {
+
         if (driverRef == null) return;
 
         driverRef.addValueEventListener(new ValueEventListener() {
+
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+
                 if (!snapshot.exists()) return;
 
                 if (currentDriver != null) {
+
                     currentDriver.setName(snapshot.child("name").getValue(String.class));
                     currentDriver.setPhone(snapshot.child("phone").getValue(String.class));
                     currentDriver.setCar(snapshot.child("car").getValue(String.class));
                     currentDriver.setVehicleType(snapshot.child("vehicleType").getValue(String.class));
 
+                    // 🚨 Force driver to choose vehicle type if not set
+                    if (currentDriver.getVehicleType() == null) {
+                        startActivity(new Intent(DriverMapActivity.this, DriverChooseTypeActivity.class));
+                    }
+
                     Boolean active = snapshot.child("active").getValue(Boolean.class);
+
                     if (active != null && !active) {
                         if (workingSwitch != null) {
                             workingSwitch.setChecked(false);
                             workingSwitch.setEnabled(false);
                         }
+
                         Toast.makeText(DriverMapActivity.this,
-                                R.string.not_approved, Toast.LENGTH_LONG).show();
+                                R.string.not_approved,
+                                Toast.LENGTH_LONG).show();
                     }
 
                     if (driverNameHeader != null) {

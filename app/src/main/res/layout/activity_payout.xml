@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/grey_50"
+    android:background="#F5F5F5"
     tools:context=".payment.PayoutActivity">
 
     <!-- Toolbar -->
@@ -41,7 +41,7 @@
             android:padding="16dp">
 
             <!-- Earnings Summary Card -->
-            <com.google.android.material.card.MaterialCardView
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
@@ -158,7 +158,7 @@
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </androidx.cardview.widget.CardView>
 
             <!-- Request Payout Button -->
             <Button

@@ -8,16 +8,12 @@
     android:background="#F5F5F5"
     tools:context=".payment.AddPaymentActivity">
 
-    <!-- Toolbar with TextView -->
+    <!-- Toolbar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/colorPrimary">
-
-
-
-    </androidx.appcompat.widget.Toolbar>
+        android:background="@color/colorPrimary"/>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -37,9 +33,9 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/black"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp"/>
 
-            <!-- Payment Method Selection Card -->
+            <!-- Payment Methods -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -47,70 +43,70 @@
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
 
-                <LinearLayout
+                <RadioGroup
+                    android:id="@+id/paymentMethodGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="8dp">
+                    android:padding="6dp">
 
-                    <!-- JazzCash Option -->
-                    <RadioGroup
-                        android:id="@+id/paymentMethodGroup"
+                    <!-- JazzCash -->
+                    <RadioButton
+                        android:id="@+id/rbJazzCash"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:text="@string/jazzcash"
+                        android:textSize="16sp"
+                        android:padding="12dp"
+                        android:drawableStart="@drawable/ic_jazzcash_scaled"
+                        android:drawablePadding="12dp"
+                        android:minHeight="48dp"
+                        android:checked="true"/>
 
-                        <RadioButton
-                            android:id="@+id/rbJazzCash"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/jazzcash"
-                            android:textSize="16sp"
-                            android:padding="12dp"
-                            android:checked="true"
-                            android:drawableStart="@drawable/ic_jazzcash"
-                            android:drawablePadding="12dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E0E0E0"/>
 
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:background="#E0E0E0" />
+                    <!-- EasyPaisa -->
+                    <RadioButton
+                        android:id="@+id/rbEasyPaisa"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/easypaisa"
+                        android:textSize="16sp"
+                        android:padding="12dp"
+                        android:drawableStart="@drawable/ic_easypaisa_scaled"
+                        android:drawablePadding="12dp"
+                        android:minHeight="48dp"/>
 
-                        <RadioButton
-                            android:id="@+id/rbEasyPaisa"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/easypaisa"
-                            android:textSize="16sp"
-                            android:padding="12dp"
-                            android:drawableStart="@drawable/ic_easypaisa"
-                            android:drawablePadding="12dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E0E0E0"/>
 
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:background="#E0E0E0" />
+                    <!-- Cash -->
+                    <RadioButton
+                        android:id="@+id/rbCash"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/cash"
+                        android:textSize="16sp"
+                        android:padding="12dp"
+                        android:drawableStart="@drawable/ic_cash_scaled"
+                        android:drawablePadding="12dp"
+                        android:minHeight="48dp"/>
 
-                        <RadioButton
-                            android:id="@+id/rbCash"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/cash"
-                            android:textSize="16sp"
-                            android:padding="12dp"
-                            android:drawableStart="@drawable/ic_cash"
-                            android:drawablePadding="12dp" />
-                    </RadioGroup>
-                </LinearLayout>
+                </RadioGroup>
             </androidx.cardview.widget.CardView>
 
-            <!-- Mobile Number Field -->
+            <!-- Mobile Number -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/mobile_number"
                 android:textSize="14sp"
                 android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
+                android:layout_marginBottom="4dp"/>
 
             <EditText
                 android:id="@+id/etMobileNumber"
@@ -120,16 +116,16 @@
                 android:inputType="phone"
                 android:padding="12dp"
                 android:background="@drawable/edit_text_bg"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp"/>
 
-            <!-- Account Holder Name Field -->
+            <!-- Account Holder -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/account_holder_name"
                 android:textSize="14sp"
                 android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
+                android:layout_marginBottom="4dp"/>
 
             <EditText
                 android:id="@+id/etAccountHolder"
@@ -139,7 +135,7 @@
                 android:inputType="textPersonName"
                 android:padding="12dp"
                 android:background="@drawable/edit_text_bg"
-                android:layout_marginBottom="20dp" />
+                android:layout_marginBottom="20dp"/>
 
             <!-- Info Card -->
             <androidx.cardview.widget.CardView
@@ -163,18 +159,19 @@
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorPrimary"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="4dp"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/payment_note"
                         android:textSize="12sp"
-                        android:textColor="#616161" />
+                        android:textColor="#616161"/>
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Save Button with Progress -->
+            <!-- Save Button -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -187,14 +184,15 @@
                     android:textAllCaps="false"
                     android:textSize="16sp"
                     android:backgroundTint="@color/colorPrimary"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@android:color/white"/>
 
                 <ProgressBar
                     android:id="@+id/progressBar"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_gravity="center"
-                    android:visibility="gone" />
+                    android:visibility="gone"/>
+
             </FrameLayout>
 
         </LinearLayout>

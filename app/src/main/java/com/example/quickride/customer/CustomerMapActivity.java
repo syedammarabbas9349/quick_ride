@@ -935,7 +935,17 @@ public class CustomerMapActivity extends AppCompatActivity
                     View.VISIBLE : View.GONE);
         }
     }
+    private void callDriver() {
+        if (mCurrentRide == null || mCurrentRide.getDriverPhone() == null) return;
 
+        Intent intent = new Intent(Intent.ACTION_CALL);
+        intent.setData(Uri.parse("tel:" + mCurrentRide.getDriverPhone()));
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                == PackageManager.PERMISSION_GRANTED) {
+            startActivity(intent);
+        }
+    }
     private void loadUserProfile() {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference userRef = FirebaseDatabase.getInstance()

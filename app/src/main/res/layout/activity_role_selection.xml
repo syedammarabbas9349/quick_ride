@@ -19,7 +19,7 @@
         android:text="Welcome to QuickRide"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/black"
+        android:textColor="#111111"
         android:layout_marginBottom="8dp" />
 
     <TextView

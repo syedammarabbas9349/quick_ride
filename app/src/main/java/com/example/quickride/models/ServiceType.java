@@ -162,10 +162,7 @@ public class ServiceType {
                 this.markerResId = R.drawable.ic_car_marker_orange;
                 break;
             case "bike":
-                this.markerResId = R.drawable.ic_bike_marker;
-                break;
-            case "rickshaw":
-                this.markerResId = R.drawable.ic_rickshaw_marker;
+                this.markerResId = R.drawable.ic_bike;
                 break;
             default:
                 this.markerResId = R.drawable.ic_car_marker_blue;
@@ -212,7 +209,6 @@ public class ServiceType {
         }
     }
 
-    // ==================== GETTERS & SETTERS ====================
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -279,14 +275,13 @@ public class ServiceType {
     public boolean isWheelchairAccessible() { return isWheelchairAccessible; }
     public void setWheelchairAccessible(boolean wheelchairAccessible) { isWheelchairAccessible = wheelchairAccessible; }
 
-    // ==================== LEGACY GETTERS (for compatibility) ====================
 
     /**
      * @deprecated Use getIconResId() instead
      */
     @Deprecated
     public Drawable getImage() {
-        return null; // Legacy method, use getIconResId() with Glide
+        return null;
     }
 
     /**
@@ -297,7 +292,6 @@ public class ServiceType {
         return capacity;
     }
 
-    // ==================== UTILITY METHODS ====================
 
     /**
      * Calculate fare for a given distance
@@ -374,12 +368,6 @@ public class ServiceType {
         return "bike".equals(vehicleType);
     }
 
-    /**
-     * Check if vehicle type is rickshaw
-     */
-    public boolean isRickshaw() {
-        return "rickshaw".equals(vehicleType);
-    }
 
     /**
      * Get capacity description
@@ -486,15 +474,6 @@ public class ServiceType {
         return bike;
     }
 
-    /**
-     * Create Rickshaw service type
-     */
-    public static ServiceType createRickshaw() {
-        ServiceType rickshaw = new ServiceType("rickshaw", "Rickshaw", "rickshaw", 12.0, 3, R.drawable.ic_rickshaw);
-        rickshaw.setBaseFare(40.0);
-        rickshaw.setMinimumFare(60.0);
-        return rickshaw;
-    }
 
     /**
      * Get default list of service types

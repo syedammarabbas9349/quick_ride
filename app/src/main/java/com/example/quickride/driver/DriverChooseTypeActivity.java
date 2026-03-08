@@ -3,6 +3,7 @@ package com.example.quickride.driver;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -24,15 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Activity for drivers to choose their vehicle/service type
- * Supports: Economy, Premium, XL (with options for Bike/Rickshaw if needed)
- */
 public class DriverChooseTypeActivity extends AppCompatActivity {
 
     private TypeAdapter typeAdapter;
-    private List<ServiceType> typeList = new ArrayList<>();
-    private MaterialButton btnConfirm;
+    private final List<ServiceType> typeList = new ArrayList<>();
+    private Button btnConfirm;
     private RecyclerView recyclerView;
     private Toolbar toolbar;
 
@@ -69,6 +66,11 @@ public class DriverChooseTypeActivity extends AppCompatActivity {
     }
 
     private void setupFirebase() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            finish();
+            return;
+        }
+
         currentDriverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         driverRef = FirebaseDatabase.getInstance().getReference()
                 .child("Users")
@@ -82,7 +84,6 @@ public class DriverChooseTypeActivity extends AppCompatActivity {
         typeList.add(new ServiceType("premium", "Premium", "premium", 25.0, 4, R.drawable.ic_premium_car));
         typeList.add(new ServiceType("xl", "XL", "xl", 35.0, 6, R.drawable.ic_suv));
         typeList.add(new ServiceType("bike", "Bike", "bike", 10.0, 1, R.drawable.ic_bike));
-        typeList.add(new ServiceType("rickshaw", "Rickshaw", "rickshaw", 12.0, 3, R.drawable.ic_rickshaw));
     }
 
     private void setupRecyclerView() {
@@ -113,7 +114,9 @@ public class DriverChooseTypeActivity extends AppCompatActivity {
     }
 
     private void saveVehicleType() {
+
         ServiceType selected = typeAdapter.getSelectedItem();
+
         if (selected == null) {
             Toast.makeText(this, R.string.select_vehicle_type, Toast.LENGTH_SHORT).show();
             return;
@@ -126,6 +129,7 @@ public class DriverChooseTypeActivity extends AppCompatActivity {
         vehicleData.put("pricePerKm", selected.getPricePerKm());
         vehicleData.put("capacity", selected.getCapacity());
         vehicleData.put("updatedAt", System.currentTimeMillis());
+        vehicleData.put("active", true);
 
         // Show loading
         btnConfirm.setEnabled(false);
@@ -134,9 +138,9 @@ public class DriverChooseTypeActivity extends AppCompatActivity {
         // Save to Firebase
         driverRef.updateChildren(vehicleData)
                 .addOnSuccessListener(aVoid -> {
+
                     Toast.makeText(this, R.string.vehicle_type_saved, Toast.LENGTH_SHORT).show();
 
-                    // Return result to calling activity
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("vehicleType", selected.getVehicleType());
                     resultIntent.putExtra("vehicleName", selected.getName());
@@ -145,8 +149,10 @@ public class DriverChooseTypeActivity extends AppCompatActivity {
                     finish();
                 })
                 .addOnFailureListener(e -> {
+
                     btnConfirm.setEnabled(true);
                     btnConfirm.setText(R.string.confirm);
+
                     Toast.makeText(this,
                             R.string.error_saving + e.getMessage(),
                             Toast.LENGTH_SHORT).show();
