@@ -1,8 +1,9 @@
 package com.example.quickride.payment;
-
+import androidx.annotation.NonNull;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,18 +18,18 @@ import androidx.appcompat.widget.Toolbar;
 import com.example.quickride.R;
 import com.example.quickride.models.PaymentMethod;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-/**
- * Activity for adding payment methods
- * Supports: JazzCash, EasyPaisa, Cash
- */
 public class AddPaymentActivity extends AppCompatActivity {
+
+    private static final String TAG = "AddPaymentActivity";
 
     // UI Components
     private Toolbar toolbar;
@@ -51,6 +52,7 @@ public class AddPaymentActivity extends AppCompatActivity {
         setupToolbar();
         setupFirebase();
         setupListeners();
+        setupPaymentTypeListener();
     }
 
     private void initializeViews() {
@@ -66,6 +68,7 @@ public class AddPaymentActivity extends AppCompatActivity {
 
         // Set default selection
         rbJazzCash.setChecked(true);
+        updateFieldsForPaymentType("jazzcash");
     }
 
     private void setupToolbar() {
@@ -78,23 +81,59 @@ public class AddPaymentActivity extends AppCompatActivity {
     }
 
     private void setupFirebase() {
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            currentUserId = auth.getCurrentUser().getUid();
+            Log.d(TAG, "User ID: " + currentUserId);
+
+            paymentMethodsRef = FirebaseDatabase.getInstance()
+                    .getReference()
+                    .child("Users")
+                    .child("Customers")
+                    .child(currentUserId)
+                    .child("paymentMethods");
+
+            Log.d(TAG, "Database path: " + paymentMethodsRef.toString());
         } else {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
             finish();
-            return;
         }
-        paymentMethodsRef = FirebaseDatabase.getInstance()
-                .getReference()
-                .child("Users")
-                .child("Customers")
-                .child(currentUserId)
-                .child("paymentMethods");
     }
 
     private void setupListeners() {
         btnSave.setOnClickListener(v -> savePaymentMethod());
+    }
+
+    private void setupPaymentTypeListener() {
+        radioGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbJazzCash) {
+                updateFieldsForPaymentType("jazzcash");
+            } else if (checkedId == R.id.rbEasyPaisa) {
+                updateFieldsForPaymentType("easypaisa");
+            } else if (checkedId == R.id.rbCash) {
+                updateFieldsForPaymentType("cash");
+            }
+        });
+    }
+
+    private void updateFieldsForPaymentType(String type) {
+        if (type.equals("cash")) {
+            etMobileNumber.setVisibility(View.GONE);
+            etAccountHolder.setVisibility(View.GONE);
+            findViewById(R.id.tvMobileNumber).setVisibility(View.GONE);
+            findViewById(R.id.tvAccountHolder).setVisibility(View.GONE);
+        } else {
+            etMobileNumber.setVisibility(View.VISIBLE);
+            etAccountHolder.setVisibility(View.VISIBLE);
+            findViewById(R.id.tvMobileNumber).setVisibility(View.VISIBLE);
+            findViewById(R.id.tvAccountHolder).setVisibility(View.VISIBLE);
+
+            if (type.equals("jazzcash")) {
+                etMobileNumber.setHint("03XXXXXXXXX");
+            } else if (type.equals("easypaisa")) {
+                etMobileNumber.setHint("03XXXXXXXXX");
+            }
+        }
     }
 
     private String getSelectedPaymentType() {
@@ -108,51 +147,22 @@ public class AddPaymentActivity extends AppCompatActivity {
         }
     }
 
-    private String getPaymentTypeName(String type) {
-        switch (type) {
-            case "jazzcash": return "JazzCash";
-            case "easypaisa": return "EasyPaisa";
-            case "cash": return "Cash";
-            default: return type;
-        }
-    }
-
     private boolean validateInputs(String type, String mobileNumber, String accountHolder) {
         if (!type.equals("cash")) {
-            // Validate mobile number
             if (TextUtils.isEmpty(mobileNumber)) {
                 etMobileNumber.setError("Mobile number required");
                 return false;
             }
-            if (!isValidPakistaniMobile(mobileNumber)) {
-                etMobileNumber.setError("Invalid Pakistani mobile number");
+            if (mobileNumber.length() < 10) {
+                etMobileNumber.setError("Enter valid mobile number");
                 return false;
             }
-
-            // Validate account holder
             if (TextUtils.isEmpty(accountHolder)) {
                 etAccountHolder.setError("Account holder name required");
                 return false;
             }
         }
         return true;
-    }
-
-    private boolean isValidPakistaniMobile(String number) {
-        // Pakistani mobile number validation
-        // Format: 03XXXXXXXXX or 3XXXXXXXXX
-        String cleaned = number.replaceAll("[\\s-]", "");
-        return cleaned.matches("^(03|3)\\d{9}$");
-    }
-
-    private String formatMobileNumber(String number) {
-        String cleaned = number.replaceAll("[\\s-]", "");
-        if (cleaned.length() == 10) {
-            return "0" + cleaned.substring(0, 3) + "-" + cleaned.substring(3, 6) + "-" + cleaned.substring(6);
-        } else if (cleaned.length() == 11) {
-            return cleaned.substring(0, 4) + "-" + cleaned.substring(4, 7) + "-" + cleaned.substring(7);
-        }
-        return number;
     }
 
     private void savePaymentMethod() {
@@ -168,57 +178,59 @@ public class AddPaymentActivity extends AppCompatActivity {
         // Show loading
         showLoading(true);
 
-        // Create payment method
-        String paymentId = UUID.randomUUID().toString();
-        PaymentMethod paymentMethod = new PaymentMethod();
-        paymentMethod.setId(paymentId);
-        paymentMethod.setType(type);
-        paymentMethod.setName(getPaymentTypeName(type));
-
-        if (!type.equals("cash")) {
-            paymentMethod.setMobileNumber(mobileNumber);
-            paymentMethod.setAccountHolderName(accountHolder);
-
-            // Format mobile number for display
-            String formattedNumber = formatMobileNumber(mobileNumber);
-            paymentMethod.setDetails(formattedNumber);
-        } else {
-            paymentMethod.setDetails("Pay with cash at dropoff");
+        // Generate a unique key
+        String paymentId = paymentMethodsRef.push().getKey();
+        if (paymentId == null) {
+            showLoading(false);
+            Toast.makeText(this, "Error generating payment ID", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        // Check if this is the first payment method
+        Log.d(TAG, "Saving payment method with ID: " + paymentId);
+
+        // Create PaymentMethod object
+        PaymentMethod paymentMethod;
+        if (type.equals("cash")) {
+            paymentMethod = new PaymentMethod(paymentId);
+        } else {
+            paymentMethod = new PaymentMethod(paymentId, type, mobileNumber, accountHolder);
+        }
+
+        // Check if this is the first payment method to set as default
         checkAndSetDefault(paymentId, paymentMethod);
     }
 
     private void checkAndSetDefault(String paymentId, PaymentMethod paymentMethod) {
-        // Check if there are any existing payment methods
-        paymentMethodsRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                boolean hasExisting = task.getResult().exists() && task.getResult().getChildrenCount() > 0;
-                paymentMethod.setDefault(!hasExisting); // Set as default if first payment method
+        paymentMethodsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                boolean hasExisting = snapshot.exists() && snapshot.getChildrenCount() > 0;
+                paymentMethod.setDefault(!hasExisting);
+
+                // Now save to Firebase
                 saveToFirebase(paymentId, paymentMethod);
-            } else {
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Error checking existing payments: " + error.getMessage());
+                // Still try to save even if check fails
                 saveToFirebase(paymentId, paymentMethod);
             }
         });
     }
 
     private void saveToFirebase(String paymentId, PaymentMethod paymentMethod) {
-        Map<String, Object> paymentMap = new HashMap<>();
-        paymentMap.put("id", paymentMethod.getId());
-        paymentMap.put("type", paymentMethod.getType());
-        paymentMap.put("name", paymentMethod.getName());
-        paymentMap.put("mobileNumber", paymentMethod.getMobileNumber());
-        paymentMap.put("accountHolderName", paymentMethod.getAccountHolderName());
-        paymentMap.put("details", paymentMethod.getDetails());
-        paymentMap.put("isDefault", paymentMethod.isDefault());
-        paymentMap.put("addedAt", System.currentTimeMillis());
+        Log.d(TAG, "Saving to Firebase: " + paymentMethod.toString());
 
-        paymentMethodsRef.child(paymentId).setValue(paymentMap)
+        paymentMethodsRef.child(paymentId).setValue(paymentMethod)
                 .addOnSuccessListener(aVoid -> {
                     showLoading(false);
                     Toast.makeText(AddPaymentActivity.this,
                             "Payment method added successfully", Toast.LENGTH_SHORT).show();
+
+                    Log.d(TAG, "Payment saved successfully at: " +
+                            paymentMethodsRef.child(paymentId).toString());
 
                     // Return result
                     Intent resultIntent = new Intent();
@@ -228,9 +240,9 @@ public class AddPaymentActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> {
                     showLoading(false);
+                    Log.e(TAG, "Error saving payment: " + e.getMessage(), e);
                     Toast.makeText(AddPaymentActivity.this,
-                            "Error adding payment: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
+                            "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }
 
@@ -239,6 +251,8 @@ public class AddPaymentActivity extends AppCompatActivity {
             progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
         }
         btnSave.setEnabled(!show);
+        btnSave.setText(show ? "Saving..." : "Save Payment Method");
+
         etMobileNumber.setEnabled(!show);
         etAccountHolder.setEnabled(!show);
         rbJazzCash.setEnabled(!show);

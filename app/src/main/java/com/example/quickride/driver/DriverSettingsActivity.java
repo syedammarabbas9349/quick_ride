@@ -1,64 +1,41 @@
 package com.example.quickride.driver;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
-import android.widget.Toast;
+import android.widget.*;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.Toolbar;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.quickride.R;
-import com.example.quickride.adapters.PayoutAdapter;
-import com.example.quickride.models.Payout;
-import com.example.quickride.payment.AddPaymentActivity;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.*;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public class DriverSettingsActivity extends AppCompatActivity {
+
     private EditText mNameField, mPhoneField, mCarField;
-    private Button mBack, mConfirm, mChooseType;
+    private Button mConfirm, mChooseType;
     private ImageView mProfileImage;
     private ProgressBar mProgressBar;
+    private Toolbar mToolbar;
 
-    private FirebaseAuth mAuth;
     private DatabaseReference mDriverDatabase;
-
     private String userID;
-    private String mName, mPhone, mCar;
     private Uri resultUri;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,21 +43,15 @@ public class DriverSettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_driver_settings);
 
         initializeViews();
+        setupToolbar();
         setupFirebase();
         getUserInfo();
 
-        mProfileImage.setOnClickListener(view -> {
-            Intent intent = new Intent(Intent.ACTION_PICK);
-            intent.setType("image/*");
-            startActivityForResult(intent, 1);
-        });
-
-        mConfirm.setOnClickListener(view -> saveUserInfo());
-        mBack.setOnClickListener(view -> finish());
+        mProfileImage.setOnClickListener(v -> selectImage());
+        mConfirm.setOnClickListener(v -> saveUserInfo());
 
         mChooseType.setOnClickListener(v -> {
-            Intent intent = new Intent(DriverSettingsActivity.this, DriverChooseTypeActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, DriverChooseTypeActivity.class));
         });
     }
 
@@ -89,155 +60,176 @@ public class DriverSettingsActivity extends AppCompatActivity {
         mPhoneField = findViewById(R.id.phone);
         mCarField = findViewById(R.id.car);
         mProfileImage = findViewById(R.id.profileImage);
-        mBack = findViewById(R.id.back);
         mConfirm = findViewById(R.id.confirm);
         mChooseType = findViewById(R.id.chooseType);
         mProgressBar = findViewById(R.id.progressBar);
+        mToolbar = findViewById(R.id.toolbar);
+    }
+
+    private void setupToolbar() {
+        setSupportActionBar(mToolbar);
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Settings");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
+        mToolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
     private void setupFirebase() {
-        mAuth = FirebaseAuth.getInstance();
-        if (mAuth.getCurrentUser() == null) {
-            Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+
+        if (auth.getCurrentUser() == null) {
             finish();
             return;
         }
 
-        userID = mAuth.getCurrentUser().getUid();
-        mDriverDatabase = FirebaseDatabase.getInstance().getReference()
-                .child("Users").child("Drivers").child(userID);
+        userID = auth.getCurrentUser().getUid();
 
+        mDriverDatabase = FirebaseDatabase.getInstance()
+                .getReference()
+                .child("Users")
+                .child("Drivers")
+                .child(userID);
     }
 
     private void getUserInfo() {
-        mProgressBar.setVisibility(View.VISIBLE);
+        showLoading(true);
 
         mDriverDatabase.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                mProgressBar.setVisibility(View.GONE);
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                showLoading(false);
 
-                if (dataSnapshot.exists()) {
-                    Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
+                if (snapshot.exists()) {
+                    String name = snapshot.child("name").getValue(String.class);
+                    String phone = snapshot.child("phone").getValue(String.class);
+                    String car = snapshot.child("car").getValue(String.class);
+                    String image = snapshot.child("profileImageUrl").getValue(String.class);
 
-                    if (map.get("name") != null)
-                        mNameField.setText(map.get("name").toString());
-                    if (map.get("phone") != null)
-                        mPhoneField.setText(map.get("phone").toString());
-                    if (map.get("car") != null)
-                        mCarField.setText(map.get("car").toString());
-                    if (map.get("profileImageUrl") != null &&
-                            !map.get("profileImageUrl").toString().isEmpty()) {
-                        Glide.with(getApplication())
-                                .load(map.get("profileImageUrl").toString())
-                                .placeholder(R.drawable.default_profile)
-                                .error(R.drawable.default_profile)
+                    mNameField.setText(name != null ? name : "");
+                    mPhoneField.setText(phone != null ? phone : "");
+                    mCarField.setText(car != null ? car : "");
+
+                    if (image != null && !image.isEmpty()) {
+                        Glide.with(DriverSettingsActivity.this)
+                                .load(image)
+                                .apply(RequestOptions.circleCropTransform())
                                 .into(mProfileImage);
                     }
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                mProgressBar.setVisibility(View.GONE);
-                Toast.makeText(DriverSettingsActivity.this,
-                        "Error loading profile: " + databaseError.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+            public void onCancelled(@NonNull DatabaseError error) {
+                showLoading(false);
             }
         });
     }
 
+    private void selectImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        startActivityForResult(intent, 1);
+    }
+
     private void saveUserInfo() {
-        mName = mNameField.getText().toString().trim();
-        mPhone = mPhoneField.getText().toString().trim();
-        mCar = mCarField.getText().toString().trim();
+        String name = mNameField.getText().toString().trim();
+        String phone = mPhoneField.getText().toString().trim();
+        String car = mCarField.getText().toString().trim();
 
-        if (mName.isEmpty()) {
-            mNameField.setError("Name is required");
-            return;
-        }
-        if (mPhone.isEmpty()) {
-            mPhoneField.setError("Phone is required");
-            return;
-        }
-        if (mCar.isEmpty()) {
-            mCarField.setError("Car details are required");
+        if (TextUtils.isEmpty(name)) {
+            mNameField.setError("Required");
             return;
         }
 
-        mProgressBar.setVisibility(View.VISIBLE);
+        if (TextUtils.isEmpty(phone)) {
+            mPhoneField.setError("Required");
+            return;
+        }
 
-        Map<String, Object> userInfo = new HashMap<>();
-        userInfo.put("name", mName);
-        userInfo.put("phone", mPhone);
-        userInfo.put("car", mCar);
+        if (TextUtils.isEmpty(car)) {
+            mCarField.setError("Required");
+            return;
+        }
 
-        mDriverDatabase.updateChildren(userInfo)
+        showLoading(true);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", name);
+        map.put("phone", phone);
+        map.put("car", car);
+
+        mDriverDatabase.updateChildren(map)
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(DriverSettingsActivity.this,
-                            "Profile Updated Successfully", Toast.LENGTH_SHORT).show();
-
                     if (resultUri != null) {
                         uploadProfileImage();
                     } else {
-                        mProgressBar.setVisibility(View.GONE);
+                        showLoading(false);
                         finish();
                     }
-                })
-                .addOnFailureListener(e -> {
-                    mProgressBar.setVisibility(View.GONE);
-                    Toast.makeText(DriverSettingsActivity.this,
-                            "Update Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
     private void uploadProfileImage() {
-        StorageReference filePath = FirebaseStorage.getInstance().getReference()
-                .child("profile_images").child(userID);
+        StorageReference fileRef = FirebaseStorage.getInstance()
+                .getReference()
+                .child("profile_images")
+                .child(userID + ".jpg");
 
-        try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(
-                    getApplication().getContentResolver(), resultUri);
+        fileRef.putFile(resultUri)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        fileRef.getDownloadUrl().addOnCompleteListener(uriTask -> {
+                            if (uriTask.isSuccessful()) {
+                                Uri downloadUri = uriTask.getResult();
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 20, baos);
-            byte[] data = baos.toByteArray();
+                                Map<String, Object> map = new HashMap<>();
+                                map.put("profileImageUrl", downloadUri.toString());
 
-            UploadTask uploadTask = filePath.putBytes(data);
-
-            uploadTask.addOnSuccessListener(taskSnapshot ->
-                            filePath.getDownloadUrl().addOnSuccessListener(uri -> {
-                                Map<String, Object> newImage = new HashMap<>();
-                                newImage.put("profileImageUrl", uri.toString());
-
-                                mDriverDatabase.updateChildren(newImage)
-                                        .addOnCompleteListener(task -> {
-                                            mProgressBar.setVisibility(View.GONE);
+                                mDriverDatabase.updateChildren(map)
+                                        .addOnSuccessListener(aVoid -> {
+                                            showLoading(false);
+                                            Toast.makeText(DriverSettingsActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
                                             finish();
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            showLoading(false);
+                                            Toast.makeText(DriverSettingsActivity.this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                         });
-                            }))
-                    .addOnFailureListener(e -> {
-                        mProgressBar.setVisibility(View.GONE);
-                        Toast.makeText(DriverSettingsActivity.this,
-                                "Image upload failed: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                        finish();
-                    });
+                            } else {
+                                showLoading(false);
+                                Toast.makeText(DriverSettingsActivity.this, "Failed to get download URL", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        showLoading(false);
+                        Toast.makeText(DriverSettingsActivity.this, "Upload failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            mProgressBar.setVisibility(View.GONE);
-            Toast.makeText(this, "Error processing image", Toast.LENGTH_SHORT).show();
-            finish();
-        }
+    private void showLoading(boolean show) {
+        mProgressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        mConfirm.setEnabled(!show);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         if (requestCode == 1 && resultCode == Activity.RESULT_OK && data != null) {
             resultUri = data.getData();
-            mProfileImage.setImageURI(resultUri);
+
+            try {
+                Glide.with(this)
+                        .load(resultUri)
+                        .circleCrop()
+                        .into(mProfileImage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }

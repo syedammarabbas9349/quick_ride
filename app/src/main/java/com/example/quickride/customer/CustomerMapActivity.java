@@ -133,7 +133,7 @@ public class CustomerMapActivity extends AppCompatActivity
     private String pickupAddress, destinationAddress;
     private ArrayList<ServiceType> typeArrayList = new ArrayList<>();
     private List<Marker> driverMarkers = new ArrayList<>();
-    private Marker mDriverMarker, pickupMarker, destinationMarker;
+    private Marker mDriverMarker, pickupMarker, destinationMarker, mDraggableDestinationMarker;
     private List<Polyline> polylines = new ArrayList<>();
     private ArrayList<Double> routeData;
 
@@ -142,6 +142,7 @@ public class CustomerMapActivity extends AppCompatActivity
     private boolean driverFound = false;
     private boolean zoomUpdated = false;
     private boolean getDriversAroundStarted = false;
+    private boolean isDraggingMarker = false;
     private int bottomSheetStatus = 1;
 
     // Handlers
@@ -178,7 +179,6 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     private void initializeViews() {
-
         drawer = findViewById(R.id.drawer_layout);
         toolbar = findViewById(R.id.toolbar);
         navigationView = findViewById(R.id.nav_view);
@@ -216,11 +216,7 @@ public class CustomerMapActivity extends AppCompatActivity
         if (mSettings != null) {
             mSettings.setOnClickListener(v -> {
                 Log.d(TAG,"Settings clicked");
-
-                Intent intent =
-                        new Intent(CustomerMapActivity.this,
-                                CustomerSettingsActivity.class);
-
+                Intent intent = new Intent(CustomerMapActivity.this, CustomerSettingsActivity.class);
                 startActivity(intent);
             });
         }
@@ -236,20 +232,31 @@ public class CustomerMapActivity extends AppCompatActivity
         // REQUEST BUTTON
         if (mRequest != null) {
             mRequest.setOnClickListener(v -> {
-
                 if (!requestBol) {
                     startRideRequest();
                 } else {
                     cancelRide();
                 }
-
             });
         }
 
+        // CALL DRIVER BUTTON
+        if (mCallDriver != null) {
+            mCallDriver.setOnClickListener(v -> callDriver());
+        }
+
+        // CANCEL BUTTON
+        if (mCancel != null) {
+            mCancel.setOnClickListener(v -> cancelRide());
+        }
+
+        // CANCEL TIMEOUT BUTTON
+        if (mCancelTimeout != null) {
+            mCancelTimeout.setOnClickListener(v -> cancelRide());
+        }
     }
 
     private void setupToolbar() {
-
         setSupportActionBar(toolbar);
 
         ActionBarDrawerToggle toggle =
@@ -286,12 +293,18 @@ public class CustomerMapActivity extends AppCompatActivity
         }
 
         autocompleteFragmentTo.setOnClickListener(v -> {
-            if (requestBol) return;
+            if (requestBol) {
+                Toast.makeText(this, "Cannot change destination during active ride", Toast.LENGTH_SHORT).show();
+                return;
+            }
             openPlaceAutocomplete(AUTOCOMPLETE_REQUEST_CODE_TO);
         });
 
         autocompleteFragmentFrom.setOnClickListener(v -> {
-            if (requestBol) return;
+            if (requestBol) {
+                Toast.makeText(this, "Cannot change pickup during active ride", Toast.LENGTH_SHORT).show();
+                return;
+            }
             openPlaceAutocomplete(AUTOCOMPLETE_REQUEST_CODE_FROM);
         });
     }
@@ -305,9 +318,7 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     private void setupRecyclerView() {
-
         routeData = new ArrayList<>();
-
         typeArrayList = getTypeList();
 
         mRecyclerView.setLayoutManager(
@@ -325,7 +336,6 @@ public class CustomerMapActivity extends AppCompatActivity
                 });
 
         mRecyclerView.setAdapter(mAdapter);
-
     }
 
     private ArrayList<ServiceType> getTypeList() {
@@ -395,20 +405,39 @@ public class CustomerMapActivity extends AppCompatActivity
     };
 
     private void setCurrentLocationAsPickup() {
-        if (mLocationHelper.getCurrentLocation() == null) return;
+        if (mLocationHelper.getCurrentLocation() == null) {
+            // Try to get location one more time
+            if (mLocationHelper.hasLocationPermission()) {
+                FusedLocationProviderClient fusedLocationClient =
+                        LocationServices.getFusedLocationProviderClient(this);
+
+                if (ActivityCompat.checkSelfPermission(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                        if (location != null) {
+                            pickupLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+                            fetchAddressFromLocation(pickupLatLng, false);
+                            updatePickupMarker();
+                            mCurrentLocation.setImageResource(R.drawable.ic_location_on_primary_24dp);
+
+                            if (destinationLatLng != null) {
+                                calculateRoute();
+                                showBottomSheet(2);
+                            }
+                        }
+                    });
+                }
+            }
+            return;
+        }
 
         pickupLatLng = mLocationHelper.getCurrentLocation();
-        pickupAddress = "Current Location";
+        fetchAddressFromLocation(pickupLatLng, false);
+        updatePickupMarker();
 
-        if (autocompleteFragmentFrom != null) {
-            autocompleteFragmentFrom.setText(pickupAddress);
-        }
         if (mCurrentLocation != null) {
             mCurrentLocation.setImageResource(R.drawable.ic_location_on_primary_24dp);
         }
-
-        updatePickupMarker();
-        fetchAddressFromLocation(pickupLatLng);
 
         if (destinationLatLng != null) {
             calculateRoute();
@@ -416,22 +445,70 @@ public class CustomerMapActivity extends AppCompatActivity
         }
     }
 
-
-
-    private void fetchAddressFromLocation(LatLng latLng) {
+    private void fetchAddressFromLocation(LatLng latLng, boolean isDestination) {
         try {
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             List<Address> addresses = geocoder.getFromLocation(
                     latLng.latitude, latLng.longitude, 1);
 
-            if (!addresses.isEmpty() && autocompleteFragmentFrom != null) {
+            if (!addresses.isEmpty()) {
                 Address address = addresses.get(0);
-                pickupAddress = address.getAddressLine(0);
-                autocompleteFragmentFrom.setText(pickupAddress);
+                String fullAddress = address.getAddressLine(0);
+
+                if (isDestination) {
+                    destinationAddress = fullAddress;
+                    if (autocompleteFragmentTo != null) {
+                        autocompleteFragmentTo.setText(fullAddress);
+                    }
+
+                    // Update or create destination marker
+                    if (destinationMarker != null) {
+                        destinationMarker.setPosition(latLng);
+                    } else if (mMap != null) {
+                        destinationMarker = mMap.addMarker(new MarkerOptions()
+                                .position(latLng)
+                                .title("Destination")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                    }
+                } else {
+                    pickupAddress = fullAddress;
+                    if (autocompleteFragmentFrom != null) {
+                        autocompleteFragmentFrom.setText(fullAddress);
+                    }
+
+                    // Update or create pickup marker
+                    if (pickupMarker != null) {
+                        pickupMarker.setPosition(latLng);
+                    } else if (mMap != null) {
+                        pickupMarker = mMap.addMarker(new MarkerOptions()
+                                .position(latLng)
+                                .title("Pickup")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                    }
+                }
             }
         } catch (IOException e) {
             Log.e(TAG, "Geocoder error", e);
+            // Fallback to coordinates
+            String coordText = String.format(Locale.getDefault(),
+                    "%.6f, %.6f", latLng.latitude, latLng.longitude);
+
+            if (isDestination) {
+                destinationAddress = coordText;
+                if (autocompleteFragmentTo != null) {
+                    autocompleteFragmentTo.setText(coordText);
+                }
+            } else {
+                pickupAddress = coordText;
+                if (autocompleteFragmentFrom != null) {
+                    autocompleteFragmentFrom.setText(coordText);
+                }
+            }
         }
+    }
+
+    private void fetchAddressFromLocation(LatLng latLng) {
+        fetchAddressFromLocation(latLng, false);
     }
 
     private void updatePickupMarker() {
@@ -467,6 +544,92 @@ public class CustomerMapActivity extends AppCompatActivity
             }
             startLocationUpdates();
         }
+
+        // Setup marker drag listener
+        setupMapMarkerDragListener();
+
+        // Auto-set current location as pickup after map is ready
+        new Handler().postDelayed(() -> {
+            setCurrentLocationAsPickup();
+        }, 1000);
+    }
+
+    private void setupMapMarkerDragListener() {
+        if (mMap == null) return;
+
+        mMap.setOnMapLongClickListener(latLng -> {
+            if (requestBol) {
+                Toast.makeText(this, "Cannot change destination during active ride", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Remove existing draggable marker
+            if (mDraggableDestinationMarker != null) {
+                mDraggableDestinationMarker.remove();
+            }
+
+            // Add new draggable marker at long-pressed location
+            mDraggableDestinationMarker = mMap.addMarker(new MarkerOptions()
+                    .position(latLng)
+                    .title("Destination")
+                    .snippet("Drag to adjust or type address")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                    .draggable(true));
+
+            // Set as destination
+            destinationLatLng = latLng;
+
+            // Reverse geocode to get address
+            fetchAddressFromLocation(latLng, true);
+
+            if (pickupLatLng != null) {
+                calculateRoute();
+                showBottomSheet(2);
+            }
+        });
+
+        // Handle marker drag events
+        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+                if (marker.equals(mDraggableDestinationMarker)) {
+                    isDraggingMarker = true;
+                }
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+                // Optional: Show temporary coordinates while dragging
+                if (marker.equals(mDraggableDestinationMarker) && autocompleteFragmentTo != null) {
+                    LatLng position = marker.getPosition();
+                    autocompleteFragmentTo.setText(String.format("Moving to: %.4f, %.4f",
+                            position.latitude, position.longitude));
+                }
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                if (marker.equals(mDraggableDestinationMarker)) {
+                    isDraggingMarker = false;
+                    LatLng finalPosition = marker.getPosition();
+
+                    // Update destination
+                    destinationLatLng = finalPosition;
+
+                    // Get address for the dropped location
+                    fetchAddressFromLocation(finalPosition, true);
+
+                    // Update route if pickup is set
+                    if (pickupLatLng != null) {
+                        calculateRoute();
+                        showBottomSheet(2);
+                    }
+
+                    Toast.makeText(CustomerMapActivity.this,
+                            "Destination updated", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private void getDriversAround() {
@@ -681,6 +844,10 @@ public class CustomerMapActivity extends AppCompatActivity
                 String image = snapshot.child("profileImageUrl").getValue(String.class);
                 Double rating = snapshot.child("rating").getValue(Double.class);
 
+                if (mCurrentRide != null) {
+                    mCurrentRide.setDriverPhone(phone);
+                }
+
                 if (mDriverName != null) {
                     mDriverName.setText(name != null ? name : "Driver");
                 }
@@ -814,6 +981,7 @@ public class CustomerMapActivity extends AppCompatActivity
     private void resetUI() {
         if (pickupMarker != null) pickupMarker.remove();
         if (destinationMarker != null) destinationMarker.remove();
+        if (mDraggableDestinationMarker != null) mDraggableDestinationMarker.remove();
         if (mDriverMarker != null) mDriverMarker.remove();
 
         clearPolylines();
@@ -822,10 +990,12 @@ public class CustomerMapActivity extends AppCompatActivity
             mRequest.setText(R.string.call_uber);
         }
         if (autocompleteFragmentTo != null) {
-            autocompleteFragmentTo.setText(R.string.to);
+            autocompleteFragmentTo.setText("");
+            autocompleteFragmentTo.setHint(R.string.to);
         }
         if (autocompleteFragmentFrom != null) {
-            autocompleteFragmentFrom.setText(R.string.from);
+            autocompleteFragmentFrom.setText("");
+            autocompleteFragmentFrom.setHint(R.string.from);
         }
         if (mCurrentLocation != null) {
             mCurrentLocation.setImageResource(R.drawable.ic_location_on_grey_24dp);
@@ -837,6 +1007,9 @@ public class CustomerMapActivity extends AppCompatActivity
 
         showBottomSheet(1);
         getDriversAround();
+
+        // Re-set current location as pickup
+        setCurrentLocationAsPickup();
     }
 
     private void clearPolylines() {
@@ -884,7 +1057,6 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     private void showBottomSheet(int status) {
-
         if (mContainer == null) return;
 
         int animationRes;
@@ -901,7 +1073,6 @@ public class CustomerMapActivity extends AppCompatActivity
                 AnimationUtils.loadAnimation(this, animationRes);
 
         animation.setAnimationListener(new Animation.AnimationListener() {
-
             @Override
             public void onAnimationStart(Animation animation) {}
 
@@ -916,6 +1087,7 @@ public class CustomerMapActivity extends AppCompatActivity
 
         mContainer.startAnimation(animation);
     }
+
     private void updateBottomSheetContent() {
         if (mLocation != null) {
             mLocation.setVisibility(bottomSheetStatus == 1 ? View.VISIBLE : View.GONE);
@@ -935,6 +1107,7 @@ public class CustomerMapActivity extends AppCompatActivity
                     View.VISIBLE : View.GONE);
         }
     }
+
     private void callDriver() {
         if (mCurrentRide == null || mCurrentRide.getDriverPhone() == null) return;
 
@@ -944,8 +1117,12 @@ public class CustomerMapActivity extends AppCompatActivity
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
                 == PackageManager.PERMISSION_GRANTED) {
             startActivity(intent);
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CALL_PHONE}, 101);
         }
     }
+
     private void loadUserProfile() {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference userRef = FirebaseDatabase.getInstance()
@@ -1001,7 +1178,38 @@ public class CustomerMapActivity extends AppCompatActivity
                     // Restore active ride
                     if (mCurrentRide != null) {
                         mCurrentRide.setDriverId(driverId);
+
+                        Double pickupLat = snapshot.child("pickupLat").getValue(Double.class);
+                        Double pickupLng = snapshot.child("pickupLng").getValue(Double.class);
+                        Double destLat = snapshot.child("destLat").getValue(Double.class);
+                        Double destLng = snapshot.child("destLng").getValue(Double.class);
+                        String pickupAddr = snapshot.child("pickupAddress").getValue(String.class);
+                        String destAddr = snapshot.child("destinationAddress").getValue(String.class);
+
+                        if (pickupLat != null && pickupLng != null) {
+                            pickupLatLng = new LatLng(pickupLat, pickupLng);
+                            pickupAddress = pickupAddr;
+                            updatePickupMarker();
+                            if (autocompleteFragmentFrom != null) {
+                                autocompleteFragmentFrom.setText(pickupAddr);
+                            }
+                        }
+
+                        if (destLat != null && destLng != null) {
+                            destinationLatLng = new LatLng(destLat, destLng);
+                            destinationAddress = destAddr;
+                            if (autocompleteFragmentTo != null) {
+                                autocompleteFragmentTo.setText(destAddr);
+                            }
+                            if (mMap != null) {
+                                destinationMarker = mMap.addMarker(new MarkerOptions()
+                                        .position(destinationLatLng)
+                                        .title("Destination")
+                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                            }
+                        }
                     }
+
                     requestBol = true;
 
                     if (driverId != null) {
@@ -1068,6 +1276,12 @@ public class CustomerMapActivity extends AppCompatActivity
                     autocompleteFragmentTo.setText(address);
                 }
 
+                // Remove draggable marker if exists
+                if (mDraggableDestinationMarker != null) {
+                    mDraggableDestinationMarker.remove();
+                    mDraggableDestinationMarker = null;
+                }
+
                 if (destinationMarker != null && mMap != null) {
                     destinationMarker.remove();
                 }
@@ -1112,39 +1326,26 @@ public class CustomerMapActivity extends AppCompatActivity
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-
         int id = item.getItemId();
 
         if (id == R.id.history) {
-
             startActivity(new Intent(this, HistoryActivity.class)
                     .putExtra("userType", "Customers"));
-
         }
         else if (id == R.id.payment) {
-
             startActivity(new Intent(this, AddPaymentActivity.class));
-
         }
         else if (id == R.id.settings) {
-
             startActivity(new Intent(this, CustomerSettingsActivity.class));
-
         }
         else if (id == R.id.help) {
-
-            Toast.makeText(this,
-                    "Help section coming soon",
-                    Toast.LENGTH_SHORT).show();
-
+            Toast.makeText(this, "Help section coming soon", Toast.LENGTH_SHORT).show();
         }
         else if (id == R.id.logout) {
-
             logout();
         }
 
         drawer.closeDrawer(GravityCompat.START);
-
         return true;
     }
 
@@ -1169,6 +1370,24 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startLocationUpdates();
+                setCurrentLocationAsPickup();
+            } else {
+                Toast.makeText(this, "Location permission is required to use this app", Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == 101) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                callDriver();
+            }
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
 
@@ -1184,6 +1403,11 @@ public class CustomerMapActivity extends AppCompatActivity
 
         if (mRouteHelper != null) {
             mRouteHelper.shutdown();
+        }
+
+        if (mLocationCallback != null) {
+            FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+            fusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
 
         Log.d(TAG, "onDestroy completed");
