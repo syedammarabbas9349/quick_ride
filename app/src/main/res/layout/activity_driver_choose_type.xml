@@ -95,7 +95,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Confirm Button - Simple Button -->
     <Button
         android:id="@+id/btnConfirm"
         android:layout_width="match_parent"

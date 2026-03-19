@@ -26,22 +26,23 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_margin="16dp"
-            android:src="@drawable/ic_menu_black_24dp"
             android:background="@drawable/circle_bg_white"
-            android:padding="8dp"
+            android:contentDescription="Menu"
             android:elevation="6dp"
-            android:contentDescription="Menu" />
+            android:padding="8dp"
+            android:src="@drawable/ic_menu_black_24dp" />
 
-        <!-- CURRENT LOCATION BUTTON -->
+        <!-- CURRENT LOCATION BUTTON - Positioned below drawer button -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/current_location"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            android:src="@drawable/ic_my_location_24dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="72dp"
             android:backgroundTint="@android:color/white"
-            app:fabSize="mini"/>
+            android:src="@drawable/ic_my_location_24dp"
+            app:fabSize="mini"
+            android:elevation="6dp" />
 
         <!-- BOTTOM CARD -->
         <androidx.cardview.widget.CardView
@@ -49,14 +50,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="8dp">
+            app:cardCornerRadius="0dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@android:color/transparent">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="20dp"
+                android:background="@drawable/card_custom_background">
 
                 <!-- LOCATION SELECT -->
                 <LinearLayout
@@ -68,33 +71,33 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp"
                         android:text="Where to?"
                         android:textSize="24sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="20dp"/>
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/place_from"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
+                        android:layout_marginBottom="12dp"
                         android:background="@drawable/edit_text_bg"
-                        android:gravity="center_vertical"
-                        android:paddingStart="16dp"
-                        android:text="From"
                         android:drawableStart="@drawable/ic_location_on_grey_24dp"
                         android:drawablePadding="12dp"
-                        android:layout_marginBottom="12dp"/>
+                        android:gravity="center_vertical"
+                        android:paddingStart="16dp"
+                        android:text="From" />
 
                     <TextView
                         android:id="@+id/place_to"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
                         android:background="@drawable/edit_text_bg"
+                        android:drawableStart="@drawable/ic_place_black_24dp"
+                        android:drawablePadding="12dp"
                         android:gravity="center_vertical"
                         android:paddingStart="16dp"
-                        android:text="To"
-                        android:drawableStart="@drawable/ic_place_black_24dp"
-                        android:drawablePadding="12dp"/>
+                        android:text="To" />
                 </LinearLayout>
 
                 <!-- VEHICLE LIST -->
@@ -108,23 +111,23 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
                         android:text="Choose Vehicle"
                         android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="16dp"/>
+                        android:textStyle="bold" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerView"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content" />
 
                     <Button
                         android:id="@+id/request"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:text="Call QuickRide"
                         android:backgroundTint="@color/colorPrimary"
-                        android:textColor="@android:color/white"/>
+                        android:text="Call QuickRide"
+                        android:textColor="@android:color/white" />
                 </LinearLayout>
 
                 <!-- SEARCH DRIVER -->
@@ -138,30 +141,30 @@
 
                     <ProgressBar
                         android:layout_width="48dp"
-                        android:layout_height="48dp"/>
+                        android:layout_height="48dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
                         android:text="Finding your driver..."
-                        android:textStyle="bold"
-                        android:layout_marginTop="16dp"/>
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/timeout_layout"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
                         android:text="Still looking for drivers"
-                        android:visibility="gone"
-                        android:layout_marginTop="8dp"/>
+                        android:visibility="gone" />
 
                     <Button
                         android:id="@+id/cancel_looking"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:text="Cancel Request"
                         android:layout_marginTop="20dp"
-                        android:textColor="@color/colorPrimary"/>
+                        android:text="Cancel Request"
+                        android:textColor="@color/colorPrimary" />
                 </LinearLayout>
 
                 <!-- DRIVER INFO -->
@@ -175,10 +178,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
                         android:text="Your Driver"
                         android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="16dp"/>
+                        android:textStyle="bold" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -189,14 +192,14 @@
                             android:id="@+id/driverProfileImage"
                             android:layout_width="64dp"
                             android:layout_height="64dp"
-                            android:src="@drawable/default_profile"
-                            android:scaleType="centerCrop"/>
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/default_profile" />
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
                             android:layout_marginStart="16dp"
+                            android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
@@ -204,26 +207,26 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Driver Name"
-                                android:textStyle="bold"/>
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/driverCar"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Vehicle Info"/>
+                                android:text="Vehicle Info" />
 
                             <TextView
                                 android:id="@+id/driverPlate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="License Plate"/>
+                                android:text="License Plate" />
                         </LinearLayout>
 
                         <Button
                             android:id="@+id/phone"
                             android:layout_width="48dp"
                             android:layout_height="48dp"
-                            android:background="@drawable/ic_call"/>
+                            android:background="@drawable/ic_call" />
                     </LinearLayout>
 
                     <Button
@@ -231,7 +234,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:text="Cancel Ride"
-                        android:textColor="#F44336"/>
+                        android:textColor="#F44336" />
                 </LinearLayout>
 
             </LinearLayout>

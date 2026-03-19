@@ -15,7 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/colorPrimary"
-        app:titleTextColor="@color/black"
+        app:titleTextColor="#FFFFFF"
         app:navigationIcon="@drawable/ic_arrow_back_24dp"
         app:title="@string/earnings"
         app:elevation="0dp" />
