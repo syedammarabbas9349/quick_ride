@@ -244,38 +244,8 @@ public class PaymentHelper {
      */
     public void initiateJazzCashPayment(String mobileNumber, double amount,
                                         String orderId, PaymentInitCallback callback) {
-        JsonObject payload = new JsonObject();
-        payload.addProperty("mobileNumber", mobileNumber);
-        payload.addProperty("amount", amount);
-        payload.addProperty("orderId", orderId);
-        payload.addProperty("customerId", currentUserId);
-        payload.addProperty("description", "QuickRide Payment");
-
-        String url = context.getString(R.string.jazzcash_api_url) + "/initiate";
-
-        makePostRequest(url, payload, new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                callback.onError(e.getMessage());
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                String responseBody = response.body() != null ? response.body().string() : "";
-                if (response.isSuccessful()) {
-                    try {
-                        JsonObject json = new Gson().fromJson(responseBody, JsonObject.class);
-                        String paymentUrl = json.get("paymentUrl").getAsString();
-                        String transactionId = json.get("transactionId").getAsString();
-                        callback.onSuccess(paymentUrl, transactionId);
-                    } catch (Exception e) {
-                        callback.onError("Failed to parse response");
-                    }
-                } else {
-                    callback.onError("Payment initiation failed: " + response.code());
-                }
-            }
-        });
+        // Payment gateway not yet implemented
+        callback.onError("Payment gateway not yet configured. Please use Cash for now.");
     }
 
     // ==================== EASYPAISA INTEGRATION ====================
@@ -285,38 +255,8 @@ public class PaymentHelper {
      */
     public void initiateEasyPaisaPayment(String mobileNumber, double amount,
                                          String orderId, PaymentInitCallback callback) {
-        JsonObject payload = new JsonObject();
-        payload.addProperty("mobileNumber", mobileNumber);
-        payload.addProperty("amount", amount);
-        payload.addProperty("orderId", orderId);
-        payload.addProperty("customerId", currentUserId);
-        payload.addProperty("description", "QuickRide Payment");
-
-        String url = context.getString(R.string.easypaisa_api_url) + "/initiate";
-
-        makePostRequest(url, payload, new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                callback.onError(e.getMessage());
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                String responseBody = response.body() != null ? response.body().string() : "";
-                if (response.isSuccessful()) {
-                    try {
-                        JsonObject json = new Gson().fromJson(responseBody, JsonObject.class);
-                        String paymentUrl = json.get("paymentUrl").getAsString();
-                        String transactionId = json.get("transactionId").getAsString();
-                        callback.onSuccess(paymentUrl, transactionId);
-                    } catch (Exception e) {
-                        callback.onError("Failed to parse response");
-                    }
-                } else {
-                    callback.onError("Payment initiation failed: " + response.code());
-                }
-            }
-        });
+        // Payment gateway not yet implemented
+        callback.onError("Payment gateway not yet configured. Please use Cash for now.");
     }
 
     // ==================== PAYMENT VERIFICATION ====================

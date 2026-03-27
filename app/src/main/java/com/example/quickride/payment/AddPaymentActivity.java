@@ -1,4 +1,5 @@
 package com.example.quickride.payment;
+
 import androidx.annotation.NonNull;
 import android.content.Intent;
 import android.os.Bundle;
@@ -53,6 +54,11 @@ public class AddPaymentActivity extends AppCompatActivity {
         setupFirebase();
         setupListeners();
         setupPaymentTypeListener();
+
+        // Show a toast informing users about payment gateway status
+        Toast.makeText(this,
+                "Note: Only Cash payments are available at the moment. JazzCash/EasyPaisa coming soon!",
+                Toast.LENGTH_LONG).show();
     }
 
     private void initializeViews() {
@@ -66,9 +72,9 @@ public class AddPaymentActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSave);
         progressBar = findViewById(R.id.progressBar);
 
-        // Set default selection
-        rbJazzCash.setChecked(true);
-        updateFieldsForPaymentType("jazzcash");
+        // Set default selection to Cash (changed from JazzCash)
+        rbCash.setChecked(true);
+        updateFieldsForPaymentType("cash");
     }
 
     private void setupToolbar() {
@@ -107,9 +113,15 @@ public class AddPaymentActivity extends AppCompatActivity {
     private void setupPaymentTypeListener() {
         radioGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbJazzCash) {
-                updateFieldsForPaymentType("jazzcash");
+                Toast.makeText(this,
+                        "JazzCash coming soon! Please select Cash for now.",
+                        Toast.LENGTH_SHORT).show();
+                rbCash.setChecked(true);
             } else if (checkedId == R.id.rbEasyPaisa) {
-                updateFieldsForPaymentType("easypaisa");
+                Toast.makeText(this,
+                        "EasyPaisa coming soon! Please select Cash for now.",
+                        Toast.LENGTH_SHORT).show();
+                rbCash.setChecked(true);
             } else if (checkedId == R.id.rbCash) {
                 updateFieldsForPaymentType("cash");
             }
@@ -167,6 +179,15 @@ public class AddPaymentActivity extends AppCompatActivity {
 
     private void savePaymentMethod() {
         String type = getSelectedPaymentType();
+
+        // Only allow Cash for now
+        if (!"cash".equals(type)) {
+            Toast.makeText(this,
+                    "Only Cash payments are available at the moment. JazzCash/EasyPaisa coming soon!",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
         String mobileNumber = etMobileNumber.getText().toString().trim();
         String accountHolder = etAccountHolder.getText().toString().trim();
 

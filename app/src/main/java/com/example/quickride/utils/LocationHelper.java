@@ -119,6 +119,12 @@ public class LocationHelper {
     /**
      * Get current location (last known)
      */
+    public void setCurrentLocation(LatLng location) {
+        this.currentLocation = location;
+    }
+    public boolean hasCurrentLocation() {
+        return currentLocation != null;
+    }
     public LatLng getCurrentLocation() {
         return currentLocation;
     }

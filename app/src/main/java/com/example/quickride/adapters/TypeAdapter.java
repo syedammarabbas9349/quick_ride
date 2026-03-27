@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.quickride.R;
 import com.example.quickride.models.ServiceType;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.List;
  */
 public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
 
+    private boolean[] sharingStates;
     private Context context;
     private List<ServiceType> typeList;
     private ServiceType selectedItem;
@@ -29,7 +31,7 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     private OnTypeSelectedListener listener;
 
     public interface OnTypeSelectedListener {
-        void onTypeSelected(ServiceType type, int position);
+        void onTypeSelected(ServiceType type, int position, boolean sharingEnabled);
     }
 
     public TypeAdapter(List<ServiceType> typeList, Context context,
@@ -38,9 +40,11 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
         this.context = context;
         this.routeData = routeData;
         this.listener = listener;
+        this.sharingStates = new boolean[typeList.size()];
 
         if (typeList != null && !typeList.isEmpty()) {
             this.selectedItem = typeList.get(0);
+            this.sharingStates[0] = false;
         }
     }
 
@@ -55,7 +59,18 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ServiceType type = typeList.get(position);
-        holder.bind(type, position);
+        boolean sharingEnabled = sharingStates[position];
+        holder.bind(type, position, sharingEnabled);
+
+        // Handle sharing switch
+        holder.sharingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            sharingStates[position] = isChecked;
+            holder.bind(type, position, isChecked);
+
+            if (type.equals(selectedItem) && listener != null) {
+                listener.onTypeSelected(type, position, isChecked);
+            }
+        });
 
         // Handle item selection
         holder.itemView.setOnClickListener(v -> {
@@ -65,7 +80,7 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
             notifyItemChanged(position);
 
             if (listener != null) {
-                listener.onTypeSelected(type, position);
+                listener.onTypeSelected(type, position, sharingStates[position]);
             }
         });
     }
@@ -73,6 +88,12 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     @Override
     public int getItemCount() {
         return typeList.size();
+    }
+
+    public boolean isSharingEnabled() {
+        if (selectedItem == null) return false;
+        int position = typeList.indexOf(selectedItem);
+        return position >= 0 && sharingStates[position];
     }
 
     public ServiceType getSelectedItem() {
@@ -95,7 +116,8 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     class ViewHolder extends RecyclerView.ViewHolder {
         CardView cardView;
         ImageView ivVehicleIcon, ivSelectedIcon;
-        TextView tvVehicleName, tvCapacity, tvPrice, tvEta;
+        TextView tvVehicleName, tvCapacity, tvPrice, tvEta, tvSharingDiscount;
+        SwitchMaterial sharingSwitch;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -106,15 +128,13 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
             tvCapacity = itemView.findViewById(R.id.capacity);
             tvPrice = itemView.findViewById(R.id.typePrice);
             tvEta = itemView.findViewById(R.id.eta);
+            sharingSwitch = itemView.findViewById(R.id.sharingSwitch);
+            tvSharingDiscount = itemView.findViewById(R.id.sharingDiscount);
         }
 
-        void bind(ServiceType type, int position) {
+        void bind(ServiceType type, int position, boolean sharingEnabled) {
             // Set vehicle name
             tvVehicleName.setText(type.getName());
-
-            // Set capacity
-            String capacityText = type.getCapacity() + " seats";
-            tvCapacity.setText(capacityText);
 
             // Set vehicle icon based on type
             switch (type.getVehicleType().toLowerCase()) {
@@ -130,25 +150,36 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
                 case "bike":
                     ivVehicleIcon.setImageResource(R.drawable.ic_bike);
                     break;
-                case "rickshaw":
-                    ivVehicleIcon.setImageResource(R.drawable.ic_rickshaw);
-                    break;
                 default:
                     ivVehicleIcon.setImageResource(R.drawable.ic_car);
                     break;
             }
 
-            // Calculate and display price
-            double fare = calculateFare(type);
-            tvPrice.setText(String.format("Rs. %.0f", fare));
+            // Calculate fares
+            double originalFare = calculateFare(type);
+            double sharingFare = originalFare * (1 - type.getSharingDiscount());
 
-            // Calculate and display ETA
-            int eta = calculateEta();
-            tvEta.setText(eta + " min");
+            // Set price based on sharing state
+            if (sharingEnabled) {
+                tvPrice.setText(String.format("Rs. %.0f", sharingFare));
+                tvSharingDiscount.setText(type.getSharingDiscountText());
+                tvSharingDiscount.setVisibility(View.VISIBLE);
+                tvCapacity.setText("Shared • " + type.getMaxSharedPassengers() + " seats");
+                int eta = calculateEta();
+                tvEta.setText((eta + 10) + " min");
+            } else {
+                tvPrice.setText(String.format("Rs. %.0f", originalFare));
+                tvSharingDiscount.setVisibility(View.GONE);
+                tvCapacity.setText(type.getCapacity() + " seats");
+                int eta = calculateEta();
+                tvEta.setText(eta + " min");
+            }
 
-            // Highlight selected item - USING CARDVIEW METHODS
+            // Set sharing switch state
+            sharingSwitch.setChecked(sharingEnabled);
+
+            // Highlight selected item
             if (type.equals(selectedItem)) {
-                // For regular CardView, we use setCardBackgroundColor and setCardElevation
                 cardView.setCardBackgroundColor(context.getResources().getColor(R.color.selected_item_bg));
                 cardView.setCardElevation(8);
                 ivSelectedIcon.setVisibility(View.VISIBLE);
@@ -162,7 +193,7 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
         private double calculateFare(ServiceType type) {
             double baseFare = type.getBaseFare() > 0 ? type.getBaseFare() : 50;
             double perKmRate = type.getPricePerKm() > 0 ? type.getPricePerKm() : 15;
-            double distance = 5.0; // default distance
+            double distance = 5.0;
 
             if (routeData != null && routeData.size() > 0 && routeData.get(0) != null) {
                 distance = routeData.get(0);
@@ -176,10 +207,9 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
 
         private int calculateEta() {
             if (routeData != null && routeData.size() > 1 && routeData.get(1) != null) {
-                // Convert seconds to minutes
                 return (int) Math.ceil(routeData.get(1) / 60);
             }
-            return 5; // default 5 minutes
+            return 5;
         }
     }
 }

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -14,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.quickride.R;
 import com.example.quickride.adapters.CardAdapter;
 import com.example.quickride.models.PaymentMethod;
-import com.example.quickride.utils.PaymentHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -120,8 +120,14 @@ public class PaymentActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         btnAddCard.setOnClickListener(v -> {
-            Intent intent = new Intent(PaymentActivity.this, AddPaymentActivity.class);
-            startActivityForResult(intent, 100);
+            // For now, show message that adding new payment methods is coming soon
+            Toast.makeText(this,
+                    "Adding new payment methods coming soon. Please use Cash for now.",
+                    Toast.LENGTH_LONG).show();
+
+            // Comment out the actual intent for now
+            // Intent intent = new Intent(PaymentActivity.this, AddPaymentActivity.class);
+            // startActivityForResult(intent, 100);
         });
 
         cashCard.setOnClickListener(v -> {
@@ -201,31 +207,44 @@ public class PaymentActivity extends AppCompatActivity {
         ImageView ivMethodIcon = dialogView.findViewById(R.id.ivMethodIcon);
 
         tvMethodName.setText(method.getName());
-        tvMethodDetails.setText(method.getDetails());
+
+        // Show different details based on payment type
+        if ("cash".equals(method.getType())) {
+            tvMethodDetails.setText("Pay with cash at dropoff");
+        } else {
+            // For JazzCash and EasyPaisa, show "Coming Soon" message
+            tvMethodDetails.setText("Coming Soon - Will be available in next update");
+
+            // Optionally change the text color to indicate it's disabled
+            tvMethodDetails.setTextColor(getResources().getColor(android.R.color.darker_gray));
+        }
+
         ivMethodIcon.setImageResource(method.getIconResource());
 
-        // Set as default button (hide for cash or if already default)
+        // Disable selection for non-cash methods (they're just placeholders)
+        boolean isCash = "cash".equals(method.getType());
+
+        // Set as default button - only show for cash
         MaterialButton btnSetDefault = dialogView.findViewById(R.id.btnSetDefault);
-        if (method.isDefault() || "cash".equals(method.getType())) {
-            btnSetDefault.setVisibility(View.GONE);
-        } else {
-            btnSetDefault.setVisibility(View.VISIBLE);
+        if (isCash) {
+            btnSetDefault.setVisibility(method.isDefault() ? View.GONE : View.VISIBLE);
             btnSetDefault.setOnClickListener(v -> {
                 setAsDefault(method, position);
                 dialog.dismiss();
             });
+        } else {
+            btnSetDefault.setVisibility(View.GONE);
         }
 
-        // Delete button (hide for cash)
+        // Delete button - never show for cash, but for others show disabled look
         MaterialButton btnDelete = dialogView.findViewById(R.id.btnDelete);
-        if ("cash".equals(method.getType())) {
+        if (isCash) {
             btnDelete.setVisibility(View.GONE);
         } else {
             btnDelete.setVisibility(View.VISIBLE);
-            btnDelete.setOnClickListener(v -> {
-                showDeleteConfirmation(method, position);
-                dialog.dismiss();
-            });
+            btnDelete.setText("Not Available");
+            btnDelete.setEnabled(false);
+            btnDelete.setAlpha(0.5f); // Make it look disabled
         }
 
         // Cancel button
@@ -263,6 +282,16 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     private void showDeleteConfirmation(PaymentMethod method, int position) {
+        // For non-cash methods, show a different message
+        if (!"cash".equals(method.getType())) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Not Available")
+                    .setMessage("JazzCash/EasyPaisa payment methods cannot be deleted yet. They will be fully available in the next update.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            return;
+        }
+
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.delete_payment_method)
                 .setMessage(getString(R.string.delete_confirmation, method.getName()))

@@ -1,6 +1,11 @@
 package com.example.quickride.driver;
 
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.gms.maps.model.LatLng;
+import android.os.Handler;
+import com.example.quickride.adapters.PassengerAdapter;
+import com.example.quickride.models.SharedPassenger;
+import com.example.quickride.utils.SharedRideManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.Manifest;
@@ -87,7 +92,12 @@ public class DriverMapActivity extends AppCompatActivity implements
         OnMapReadyCallback,
         RouteHelper.RouteCallback {
 
-    private static final String TAG = "DriverMapActivity";
+
+    private RecyclerView passengerRecyclerView;
+    private TextView tvPassengerCountHeader, tvTotalEarningsShared;
+    private LinearLayout passengerListLayout;
+    private Button btnFindMorePassengers;
+    private PassengerAdapter passengerAdapter;    private static final String TAG = "DriverMapActivity";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 100;
     private static final int MAX_SEARCH_DISTANCE = 5;
 
@@ -118,6 +128,11 @@ public class DriverMapActivity extends AppCompatActivity implements
     private RideRequest currentRide;
     private List<RideRequest> requestList = new ArrayList<>();
     private CardRequestAdapter requestAdapter;
+
+
+    private Handler searchHandler = new Handler();
+    private Runnable searchRunnable;
+    private boolean isSearching = false;
 
     // Firebase
     private DatabaseReference driverRef;
@@ -162,9 +177,11 @@ public class DriverMapActivity extends AppCompatActivity implements
         setupListeners();
         loadDriverData();
         checkForActiveRide();
+        setupPassengerList();
     }
 
     private void initializeViews() {
+
         drawer = findViewById(R.id.drawer_layout);
         drawerButton = findViewById(R.id.drawerButton);
         navigationView = findViewById(R.id.navigationView);
@@ -184,12 +201,155 @@ public class DriverMapActivity extends AppCompatActivity implements
         customerName = findViewById(R.id.customerName);
         pickupAddress = findViewById(R.id.pickupAddress);
         customerProfileImage = findViewById(R.id.customerProfileImage);
+        passengerRecyclerView = findViewById(R.id.passengerRecyclerView);
+        tvPassengerCountHeader = findViewById(R.id.tvPassengerCountHeader);
+        tvTotalEarningsShared = findViewById(R.id.tvTotalEarningsShared);
+        passengerListLayout = findViewById(R.id.passengerListLayout);
+        btnFindMorePassengers = findViewById(R.id.btnFindMorePassengers);
     }
 
     private void setupToolbar() {
         if (drawerButton != null) {
             drawerButton.setOnClickListener(v ->
                     drawer.openDrawer(GravityCompat.START));
+        }
+    }
+    private void showPassengerList() {
+        if (currentRide == null || !currentRide.isSharingEnabled()) {
+            if (passengerListLayout != null) passengerListLayout.setVisibility(View.GONE);
+            return;
+        }
+
+        if (passengerListLayout != null) passengerListLayout.setVisibility(View.VISIBLE);
+
+        if (currentRide.getPassengers() != null && !currentRide.getPassengers().isEmpty()) {
+            passengerAdapter = new PassengerAdapter(currentRide.getPassengers());
+            passengerRecyclerView.setAdapter(passengerAdapter);
+
+            if (tvPassengerCountHeader != null) {
+                tvPassengerCountHeader.setText("Passengers (" + currentRide.getCurrentPassengers() + "/" +
+                        currentRide.getMaxPassengers() + ")");
+            }
+
+            // Calculate total earnings from all passengers
+            double totalEarnings = 0;
+            for (SharedPassenger p : currentRide.getPassengers()) {
+                totalEarnings += p.getFareShare();
+            }
+            if (tvTotalEarningsShared != null) {
+                tvTotalEarningsShared.setText(String.format("Total: Rs. %.0f", totalEarnings));
+            }
+
+            // Show "Find More" button if not full
+            if (btnFindMorePassengers != null) {
+                btnFindMorePassengers.setVisibility(
+                        currentRide.canAcceptMorePassengers() ? View.VISIBLE : View.GONE);
+            }
+        }
+    }
+    private void findMorePassengers() {
+        if (currentRide == null || !currentRide.canAcceptMorePassengers()) return;
+
+        Toast.makeText(this, "Searching for more passengers...", Toast.LENGTH_SHORT).show();
+
+        // Query for pending shared ride requests
+        DatabaseReference pendingRef = FirebaseDatabase.getInstance()
+                .getReference().child("customerRequest");
+
+        pendingRef.orderByChild("status").equalTo("pending")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        List<SharedPassenger> potentials = new ArrayList<>();
+
+                        for (DataSnapshot data : snapshot.getChildren()) {
+                            RideRequest request = data.getValue(RideRequest.class);
+                            if (request != null && request.isSharingEnabled() &&
+                                    request.getVehicleType().equals(currentDriver.getVehicleType())) {
+
+                                SharedPassenger passenger = new SharedPassenger(
+                                        request.getCustomerId(),
+                                        request.getCustomerName(),
+                                        request.getCustomerPhone(),
+                                        request.getCustomerImageUrl(),
+                                        true
+                                );
+                                passenger.setPickupLat(request.getPickupLat());
+                                passenger.setPickupLng(request.getPickupLng());
+                                passenger.setPickupAddress(request.getPickupAddress());
+                                passenger.setDropoffLat(request.getDestLat());
+                                passenger.setDropoffLng(request.getDestLng());
+                                passenger.setDropoffAddress(request.getDestinationAddress());
+
+                                potentials.add(passenger);
+                            }
+                        }
+
+                        showPotentialPassengersDialog(potentials);
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
+    }
+
+    private void showPotentialPassengersDialog(List<SharedPassenger> passengers) {
+        if (passengers.isEmpty()) {
+            Toast.makeText(this, "No nearby passengers found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] names = new String[passengers.size()];
+        for (int i = 0; i < passengers.size(); i++) {
+            names[i] = passengers.get(i).getName() + " - " +
+                    passengers.get(i).getPickupAddress();
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Add Passenger")
+                .setItems(names, (dialog, which) -> {
+                    SharedPassenger selected = passengers.get(which);
+                    addPassengerToRide(selected);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void addPassengerToRide(SharedPassenger passenger) {
+        if (!SharedRideManager.canAddPassenger(currentRide, passenger,
+                new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude()))) {
+            Toast.makeText(this, "Passenger is not along your route", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Add to ride
+        SharedRideManager.updateSharedRide(currentRide, passenger);
+
+        // Update in Firebase
+        DatabaseReference rideRef = FirebaseDatabase.getInstance()
+                .getReference()
+                .child("ride_info")
+                .child(currentRide.getRideId());
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("passengers", currentRide.getPassengers());
+        updates.put("currentPassengers", currentRide.getCurrentPassengers());
+        rideRef.updateChildren(updates);
+
+        // Recalculate route
+        calculateRouteToPickup();
+
+        // Update UI
+        showPassengerList();
+        Toast.makeText(this, passenger.getName() + " added to ride", Toast.LENGTH_SHORT).show();
+    }
+    private void setupPassengerList() {
+        if (passengerRecyclerView != null) {
+            passengerRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        }
+
+        if (btnFindMorePassengers != null) {
+            btnFindMorePassengers.setOnClickListener(v -> findMorePassengers());
         }
     }
     private void setupDrawerMenu() {
@@ -224,6 +384,7 @@ public class DriverMapActivity extends AppCompatActivity implements
             return true;
         });
     }
+
 
     private void showLogoutDialog() {
         new AlertDialog.Builder(this)
@@ -347,7 +508,7 @@ public class DriverMapActivity extends AppCompatActivity implements
 
     private void setupBottomSheet() {
         Log.d(TAG, "setupBottomSheet started");
-
+        setupPassengerList();
         if (bottomSheet == null) {
             Log.e(TAG, "bottomSheet is null, cannot setup");
             return;
@@ -435,11 +596,9 @@ public class DriverMapActivity extends AppCompatActivity implements
     }
 
     private void goOnline() {
-
         if (currentDriver == null || currentDriver.getVehicleType() == null) {
             Toast.makeText(this, "Please select vehicle type first", Toast.LENGTH_LONG).show();
             startActivity(new Intent(this, DriverChooseTypeActivity.class));
-
             if (workingSwitch != null) workingSwitch.setChecked(false);
             return;
         }
@@ -451,11 +610,23 @@ public class DriverMapActivity extends AppCompatActivity implements
 
         if (workingSwitch != null) workingSwitch.setChecked(true);
 
+        // ✅ ADD THIS: Save online status to Firebase
+        if (driverRef != null) {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("isOnline", true);
+            updates.put("lastOnline", System.currentTimeMillis());
+            driverRef.updateChildren(updates)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ isOnline = true saved to Firebase"))
+                    .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to save online status: " + e.getMessage()));
+        }
+
         startLocationUpdates();
 
         if (mMap != null && checkLocationPermission()) {
             mMap.setMyLocationEnabled(true);
         }
+
+        startPeriodicSearch();
 
         if (driverStatusHeader != null) {
             driverStatusHeader.setText(R.string.online);
@@ -468,6 +639,18 @@ public class DriverMapActivity extends AppCompatActivity implements
 
     private void goOffline() {
         if (workingSwitch != null) workingSwitch.setChecked(false);
+
+        // ✅ ADD THIS: Save offline status to Firebase
+        if (driverRef != null) {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("isOnline", false);
+            updates.put("lastOffline", System.currentTimeMillis());
+            driverRef.updateChildren(updates)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ isOnline = false saved to Firebase"))
+                    .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to save offline status: " + e.getMessage()));
+        }
+
+        stopPeriodicSearch();
         stopLocationUpdates();
 
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -508,10 +691,29 @@ public class DriverMapActivity extends AppCompatActivity implements
             for (Location location : locationResult.getLocations()) {
                 lastLocation = location;
 
-                // Update driver location in Firebase
+                // THIS IS THE CRITICAL MISSING PART - SAVE TO FIREBASE
                 if (workingSwitch != null && workingSwitch.isChecked()) {
                     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+                    // Make sure geoFireWorking is initialized!
                     if (geoFireWorking != null) {
+                        geoFireWorking.setLocation(userId,
+                                new GeoLocation(location.getLatitude(), location.getLongitude()),
+                                new GeoFire.CompletionListener() {
+                                    @Override
+                                    public void onComplete(String key, DatabaseError error) {
+                                        if (error != null) {
+                                            Log.e(TAG, "GeoFire error: " + error.getMessage());
+                                        } else {
+                                            Log.d(TAG, "Driver location saved to Firebase");
+                                        }
+                                    }
+                                });
+                    } else {
+                        Log.e(TAG, "geoFireWorking is null! Reinitializing...");
+                        geoFireWorking = new GeoFire(FirebaseDatabase.getInstance()
+                                .getReference("driversWorking"));
+                        // Try again
                         geoFireWorking.setLocation(userId,
                                 new GeoLocation(location.getLatitude(), location.getLongitude()));
                     }
@@ -529,9 +731,9 @@ public class DriverMapActivity extends AppCompatActivity implements
                     zoomUpdated = true;
                 }
 
-                // Start searching for requests
+
                 if (!started && workingSwitch != null && workingSwitch.isChecked()) {
-                    searchForRequests();
+                   searchForRequests();
                     started = true;
                 }
 
@@ -544,10 +746,20 @@ public class DriverMapActivity extends AppCompatActivity implements
     };
 
     private void searchForRequests() {
-        if (lastLocation == null) return;
+        if (lastLocation == null) {
+            Log.e(TAG, "❌ Cannot search: lastLocation is null");
+            return;
+        }
+
+        Log.d(TAG, "======================================");
+        Log.d(TAG, "🔍 DRIVER SEARCHING FOR REQUESTS");
+        Log.d(TAG, "📍 Driver location: " + lastLocation.getLatitude() + ", " + lastLocation.getLongitude());
+        Log.d(TAG, "🚗 Driver vehicle: " + (currentDriver != null ? currentDriver.getVehicleType() : "null"));
+        Log.d(TAG, "📏 Search radius: " + MAX_SEARCH_DISTANCE + " km");
+        Log.d(TAG, "======================================");
 
         DatabaseReference requestsLocation = FirebaseDatabase.getInstance()
-                .getReference().child("customer_requests");
+                .getReference().child("customerRequest");
 
         GeoFire geoFire = new GeoFire(requestsLocation);
         geoQuery = geoFire.queryAtLocation(
@@ -557,11 +769,21 @@ public class DriverMapActivity extends AppCompatActivity implements
         geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
-                if (workingSwitch == null || !workingSwitch.isChecked() || currentRide != null) return;
+                Log.d(TAG, "📢 Found request nearby: " + key);
+                Log.d(TAG, "   Location: " + location.latitude + ", " + location.longitude);
+
+                if (workingSwitch == null || !workingSwitch.isChecked() || currentRide != null) {
+                    Log.d(TAG, "   Skipping: workingSwitch=" + (workingSwitch != null && workingSwitch.isChecked()) +
+                            ", currentRide=" + (currentRide != null));
+                    return;
+                }
 
                 // Check if request already in list
                 for (RideRequest ride : requestList) {
-                    if (ride.getRideId() != null && ride.getRideId().equals(key)) return;
+                    if (ride.getRideId() != null && ride.getRideId().equals(key)) {
+                        Log.d(TAG, "   Already in list");
+                        return;
+                    }
                 }
 
                 fetchRequestDetails(key);
@@ -574,45 +796,105 @@ public class DriverMapActivity extends AppCompatActivity implements
             public void onKeyMoved(String key, GeoLocation location) {}
 
             @Override
-            public void onGeoQueryReady() {}
+            public void onGeoQueryReady() {
+                Log.d(TAG, "✅ GeoQuery complete - no more requests");
+            }
 
             @Override
-            public void onGeoQueryError(DatabaseError error) {}
+            public void onGeoQueryError(DatabaseError error) {
+                Log.e(TAG, "❌ GeoQuery error: " + error.getMessage());
+            }
         });
     }
 
     private void fetchRequestDetails(String requestId) {
-        if (rideInfoRef == null) return;
+        Log.d(TAG, "🔍 Fetching details for request: " + requestId);
 
-        rideInfoRef.child(requestId).addListenerForSingleValueEvent(new ValueEventListener() {
+        DatabaseReference customerRequestRef = FirebaseDatabase.getInstance()
+                .getReference().child("customerRequest").child(requestId);
+
+        customerRequestRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists() || currentRide != null) return;
+                if (!snapshot.exists()) {
+                    Log.d(TAG, "   Request doesn't exist in customerRequest");
+                    return;
+                }
+                if (currentRide != null) {
+                    Log.d(TAG, "   Already have a ride, skipping");
+                    return;
+                }
 
-                RideRequest request = snapshot.getValue(RideRequest.class);
-                if (request == null) return;
+                // Manually parse the data instead of using getValue()
+                String vehicleType = snapshot.child("vehicleType").getValue(String.class);
+                String status = snapshot.child("status").getValue(String.class);
+                Double pickupLat = snapshot.child("pickupLat").getValue(Double.class);
+                Double pickupLng = snapshot.child("pickupLng").getValue(Double.class);
+                Double destLat = snapshot.child("destLat").getValue(Double.class);
+                Double destLng = snapshot.child("destLng").getValue(Double.class);
+                String pickupAddress = snapshot.child("pickupAddress").getValue(String.class);
+                String destinationAddress = snapshot.child("destinationAddress").getValue(String.class);
+                String customerId = snapshot.child("customerId").getValue(String.class);
+                String customerName = snapshot.child("customerName").getValue(String.class);
+                String customerPhone = snapshot.child("customerPhone").getValue(String.class);
+                String customerImageUrl = snapshot.child("customerImageUrl").getValue(String.class);
+                Double fare = snapshot.child("fare").getValue(Double.class);
+
+                // Create a new RideRequest object and manually set values
+                RideRequest request = new RideRequest();
+                request.setRideId(requestId);
+                request.setVehicleType(vehicleType);
+                request.setStatus(status);
+                request.setPickupLat(pickupLat != null ? pickupLat : 0);
+                request.setPickupLng(pickupLng != null ? pickupLng : 0);
+                request.setDestLat(destLat != null ? destLat : 0);
+                request.setDestLng(destLng != null ? destLng : 0);
+                request.setPickupAddress(pickupAddress);
+                request.setDestinationAddress(destinationAddress);
+                request.setCustomerId(customerId);
+                request.setCustomerName(customerName);
+                request.setCustomerPhone(customerPhone);
+                request.setCustomerImageUrl(customerImageUrl);
+                request.setFare(fare != null ? fare : 0);
+                request.setSharingEnabled(snapshot.child("sharingEnabled").getValue(Boolean.class) != null ?
+                        snapshot.child("sharingEnabled").getValue(Boolean.class) : false);
+
+                Log.d(TAG, "   Request details:");
+                Log.d(TAG, "      Vehicle type: " + vehicleType);
+                Log.d(TAG, "      Status: " + status);
+                Log.d(TAG, "      Pickup: " + (pickupLat != null ? pickupLat : 0) + ", " + (pickupLng != null ? pickupLng : 0));
 
                 // Check if vehicle type matches
-                if (currentDriver == null || !request.getVehicleType().equals(currentDriver.getVehicleType())) return;
+                if (currentDriver == null) {
+                    Log.d(TAG, "   currentDriver is null");
+                    return;
+                }
+
+                if (vehicleType == null || !vehicleType.equals(currentDriver.getVehicleType())) {
+                    Log.d(TAG, "   ❌ Vehicle mismatch: " + vehicleType + " vs " + currentDriver.getVehicleType());
+                    return;
+                }
 
                 // Check if request is still pending
-                if (!"pending".equals(request.getStatus())) return;
+                if (status == null || !"pending".equals(status)) {
+                    Log.d(TAG, "   ❌ Request not pending: " + status);
+                    return;
+                }
 
-                request.setRideId(requestId);
+                Log.d(TAG, "   ✅ MATCH FOUND! Adding to list");
                 requestList.add(request);
                 if (requestAdapter != null) {
                     requestAdapter.notifyItemInserted(requestList.size() - 1);
                 }
 
-                // Show/hide empty state
                 updateRequestsVisibility();
-
-                // Play notification sound
                 playNotificationSound();
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Error fetching request details: " + error.getMessage());
+            }
         });
     }
 
@@ -625,6 +907,7 @@ public class DriverMapActivity extends AppCompatActivity implements
     }
 
     private void acceptRide(RideRequest request) {
+        stopPeriodicSearch();
         currentRide = request;
         if (currentDriver != null) {
             currentRide.setDriverId(currentDriver.getId());
@@ -677,7 +960,8 @@ public class DriverMapActivity extends AppCompatActivity implements
         if (customerName != null) customerName.setText(currentRide.getCustomerName());
         if (pickupAddress != null) pickupAddress.setText(currentRide.getPickupAddress());
 
-        // Load customer image if available
+
+        // Load customer image
         if (customerProfileImage != null &&
                 currentRide.getCustomerImageUrl() != null &&
                 !currentRide.getCustomerImageUrl().isEmpty()) {
@@ -693,6 +977,9 @@ public class DriverMapActivity extends AppCompatActivity implements
             bottomSheetBehavior.setHideable(false);
             bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         }
+
+        // Show passenger list for shared rides
+        showPassengerList();
     }
 
     private void listenForRideUpdates() {
@@ -727,6 +1014,37 @@ public class DriverMapActivity extends AppCompatActivity implements
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {}
                 });
+    }
+
+    private void startPeriodicSearch() {
+        if (isSearching) return;
+
+        isSearching = true;
+        searchRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (workingSwitch != null && workingSwitch.isChecked() && currentRide == null) {
+                    Log.d(TAG, "🔍 Periodic search for requests...");
+                    searchForRequests();
+                }
+                // Repeat every 10 seconds
+                if (isSearching) {
+                    searchHandler.postDelayed(this, 10000);
+                }
+            }
+        };
+
+        // Start immediately
+        searchHandler.post(searchRunnable);
+        Log.d(TAG, "✅ Started periodic search (every 10 seconds)");
+    }
+
+    private void stopPeriodicSearch() {
+        isSearching = false;
+        if (searchHandler != null && searchRunnable != null) {
+            searchHandler.removeCallbacks(searchRunnable);
+        }
+        Log.d(TAG, "Stopped periodic search");
     }
 
     private void calculateRouteToPickup() {
@@ -876,6 +1194,7 @@ public class DriverMapActivity extends AppCompatActivity implements
         // Reset UI
         currentRide = null;
         if (customerInfo != null) customerInfo.setVisibility(View.GONE);
+        if (passengerListLayout != null) passengerListLayout.setVisibility(View.GONE);
         if (bottomSheetBehavior != null) {
             bottomSheetBehavior.setHideable(true);
             bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
@@ -937,39 +1256,37 @@ public class DriverMapActivity extends AppCompatActivity implements
     }
 
     private void loadDriverData() {
-
         if (driverRef == null) return;
 
         driverRef.addValueEventListener(new ValueEventListener() {
-
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-
                 if (!snapshot.exists()) return;
 
                 if (currentDriver != null) {
-
                     currentDriver.setName(snapshot.child("name").getValue(String.class));
                     currentDriver.setPhone(snapshot.child("phone").getValue(String.class));
                     currentDriver.setCar(snapshot.child("car").getValue(String.class));
                     currentDriver.setVehicleType(snapshot.child("vehicleType").getValue(String.class));
 
-                    // 🚨 Force driver to choose vehicle type if not set
+                    // ✅ ADD THIS: Sync switch with Firebase
+                    Boolean isOnline = snapshot.child("isOnline").getValue(Boolean.class);
+                    if (isOnline != null && workingSwitch != null) {
+                        workingSwitch.setChecked(isOnline);
+                    }
+
+                    // Force driver to choose vehicle type if not set
                     if (currentDriver.getVehicleType() == null) {
                         startActivity(new Intent(DriverMapActivity.this, DriverChooseTypeActivity.class));
                     }
 
                     Boolean active = snapshot.child("active").getValue(Boolean.class);
-
                     if (active != null && !active) {
                         if (workingSwitch != null) {
                             workingSwitch.setChecked(false);
                             workingSwitch.setEnabled(false);
                         }
-
-                        Toast.makeText(DriverMapActivity.this,
-                                R.string.not_approved,
-                                Toast.LENGTH_LONG).show();
+                        Toast.makeText(DriverMapActivity.this, R.string.not_approved, Toast.LENGTH_LONG).show();
                     }
 
                     if (driverNameHeader != null) {
@@ -1133,6 +1450,7 @@ public class DriverMapActivity extends AppCompatActivity implements
     protected void onDestroy() {
         super.onDestroy();
         stopLocationUpdates();
+        stopPeriodicSearch();
 
         if (rideStatusListener != null && currentRide != null && rideInfoRef != null &&
                 currentRide.getRideId() != null) {

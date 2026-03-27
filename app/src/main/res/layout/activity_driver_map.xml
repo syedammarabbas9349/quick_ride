@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -63,7 +62,6 @@
 
             </LinearLayout>
 
-
             <!-- PULL HANDLE -->
             <LinearLayout
                 android:id="@+id/bringUpBottomLayout"
@@ -92,7 +90,6 @@
 
             </LinearLayout>
 
-
             <!-- BOTTOM SHEET -->
             <LinearLayout
                 android:id="@+id/bottomSheet"
@@ -104,7 +101,6 @@
                 android:elevation="14dp"
                 android:visibility="gone"
                 android:padding="18dp">
-
 
                 <!-- CUSTOMER INFO -->
                 <LinearLayout
@@ -174,7 +170,6 @@
 
                 </LinearLayout>
 
-
                 <!-- REQUEST LIST -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/requestsRecyclerView"
@@ -192,6 +187,47 @@
                     android:textColor="#757575"
                     android:visibility="gone"/>
 
+                <!-- PASSENGER LIST SECTION - MOVED INSIDE BOTTOM SHEET -->
+                <LinearLayout
+                    android:id="@+id/passengerListLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:layout_marginTop="16dp">
+
+                    <TextView
+                        android:id="@+id/tvPassengerCountHeader"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Passengers"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/passengerRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvTotalEarningsShared"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total: Rs. 0"
+                        android:textSize="14sp"
+                        android:layout_marginTop="8dp" />
+
+                    <Button
+                        android:id="@+id/btnFindMorePassengers"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="12dp"
+                        android:text="Find More Passengers"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
                 <Button
                     android:id="@+id/rideStatus"
                     android:layout_width="match_parent"
@@ -206,7 +242,6 @@
         </RelativeLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
 
     <!-- DRAWER MENU -->
     <com.google.android.material.navigation.NavigationView

@@ -44,6 +44,15 @@ import java.util.Map;
 @Keep
 public class RideRequest implements Cloneable {
 
+
+    private boolean sharingEnabled = false;
+    private double sharingDiscount = 0.3; // 30% discount
+    private double originalFare;
+    private String shareRideId;
+    private int maxPassengers = 4;
+    private int currentPassengers = 1;
+    private List<SharedPassenger> passengers = new ArrayList<>();
+    private String shareStatus = "solo";
     // Ride identifiers
     private String rideId;
     private String customerId;
@@ -123,9 +132,37 @@ public class RideRequest implements Cloneable {
     private transient DatabaseReference rideRef;
     private transient Activity activity;
 
-    /**
-     * Empty constructor required for Firebase
-     */
+    public boolean isSharingEnabled() { return sharingEnabled; }
+    public void setSharingEnabled(boolean sharingEnabled) { this.sharingEnabled = sharingEnabled; }
+
+    public double getSharingDiscount() { return sharingDiscount; }
+    public void setSharingDiscount(double sharingDiscount) { this.sharingDiscount = sharingDiscount; }
+
+    public double getOriginalFare() { return originalFare; }
+    public void setOriginalFare(double originalFare) { this.originalFare = originalFare; }
+
+    public String getShareRideId() { return shareRideId; }
+    public void setShareRideId(String shareRideId) { this.shareRideId = shareRideId; }
+
+    public int getMaxPassengers() { return maxPassengers; }
+    public void setMaxPassengers(int maxPassengers) { this.maxPassengers = maxPassengers; }
+
+    public int getCurrentPassengers() { return currentPassengers; }
+    public void setCurrentPassengers(int currentPassengers) { this.currentPassengers = currentPassengers; }
+
+    public List<SharedPassenger> getPassengers() { return passengers; }
+    public void setPassengers(List<SharedPassenger> passengers) { this.passengers = passengers; }
+
+    public String getShareStatus() { return shareStatus; }
+    public void setShareStatus(String shareStatus) { this.shareStatus = shareStatus; }
+
+    public boolean canAcceptMorePassengers() {
+        return sharingEnabled && currentPassengers < maxPassengers;
+    }
+
+    public String getPassengerCountText() {
+        return currentPassengers + "/" + maxPassengers + " passengers";
+    }
     public RideRequest() {
     }
 

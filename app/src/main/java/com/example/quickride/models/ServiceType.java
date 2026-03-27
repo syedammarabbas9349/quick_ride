@@ -48,6 +48,11 @@ public class ServiceType {
     private boolean hasChildSeat;       // Child seat available
     private boolean isWheelchairAccessible; // Wheelchair accessible
 
+    // Sharing fields
+    private double sharingDiscount = 0.3;
+    private boolean sharingAvailable = true;
+    private int maxSharedPassengers = 4;
+
     /**
      * Empty constructor required for Firebase
      */
@@ -209,169 +214,275 @@ public class ServiceType {
         }
     }
 
+    // ==================== SHARING GETTERS & SETTERS ====================
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public double getSharingDiscount() {
+        return sharingDiscount;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setSharingDiscount(double sharingDiscount) {
+        this.sharingDiscount = sharingDiscount;
+    }
 
-    public String getVehicleType() { return vehicleType; }
-    public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
+    public boolean isSharingAvailable() {
+        return sharingAvailable;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setSharingAvailable(boolean sharingAvailable) {
+        this.sharingAvailable = sharingAvailable;
+    }
 
-    public double getBaseFare() { return baseFare; }
-    public void setBaseFare(double baseFare) { this.baseFare = baseFare; }
+    public int getMaxSharedPassengers() {
+        return maxSharedPassengers;
+    }
 
-    public double getPricePerKm() { return pricePerKm; }
-    public void setPricePerKm(double pricePerKm) { this.pricePerKm = pricePerKm; }
+    public void setMaxSharedPassengers(int maxSharedPassengers) {
+        this.maxSharedPassengers = maxSharedPassengers;
+    }
 
-    public double getPricePerMinute() { return pricePerMinute; }
-    public void setPricePerMinute(double pricePerMinute) { this.pricePerMinute = pricePerMinute; }
+    public double getSharingFare(double originalFare) {
+        return originalFare * (1 - sharingDiscount);
+    }
 
-    public double getMinimumFare() { return minimumFare; }
-    public void setMinimumFare(double minimumFare) { this.minimumFare = minimumFare; }
+    public String getSharingDiscountText() {
+        return "Save " + (int)(sharingDiscount * 100) + "%";
+    }
 
-    public double getCancellationFee() { return cancellationFee; }
-    public void setCancellationFee(double cancellationFee) { this.cancellationFee = cancellationFee; }
+    // ==================== GETTERS & SETTERS ====================
 
-    public int getCapacity() { return capacity; }
-    public void setCapacity(int capacity) { this.capacity = capacity; }
+    public String getId() {
+        return id;
+    }
 
-    public int getLuggageCapacity() { return luggageCapacity; }
-    public void setLuggageCapacity(int luggageCapacity) { this.luggageCapacity = luggageCapacity; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public int getEstimatedMinutes() { return estimatedMinutes; }
-    public void setEstimatedMinutes(int estimatedMinutes) { this.estimatedMinutes = estimatedMinutes; }
+    public String getName() {
+        return name;
+    }
 
-    public boolean isAvailable() { return isAvailable; }
-    public void setAvailable(boolean available) { isAvailable = available; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public boolean isPopular() { return isPopular; }
-    public void setPopular(boolean popular) { isPopular = popular; }
+    public String getVehicleType() {
+        return vehicleType;
+    }
+
+    public void setVehicleType(String vehicleType) {
+        this.vehicleType = vehicleType;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public double getBaseFare() {
+        return baseFare;
+    }
+
+    public void setBaseFare(double baseFare) {
+        this.baseFare = baseFare;
+    }
+
+    public double getPricePerKm() {
+        return pricePerKm;
+    }
+
+    public void setPricePerKm(double pricePerKm) {
+        this.pricePerKm = pricePerKm;
+    }
+
+    public double getPricePerMinute() {
+        return pricePerMinute;
+    }
+
+    public void setPricePerMinute(double pricePerMinute) {
+        this.pricePerMinute = pricePerMinute;
+    }
+
+    public double getMinimumFare() {
+        return minimumFare;
+    }
+
+    public void setMinimumFare(double minimumFare) {
+        this.minimumFare = minimumFare;
+    }
+
+    public double getCancellationFee() {
+        return cancellationFee;
+    }
+
+    public void setCancellationFee(double cancellationFee) {
+        this.cancellationFee = cancellationFee;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
+    }
+
+    public int getLuggageCapacity() {
+        return luggageCapacity;
+    }
+
+    public void setLuggageCapacity(int luggageCapacity) {
+        this.luggageCapacity = luggageCapacity;
+    }
+
+    public int getEstimatedMinutes() {
+        return estimatedMinutes;
+    }
+
+    public void setEstimatedMinutes(int estimatedMinutes) {
+        this.estimatedMinutes = estimatedMinutes;
+    }
+
+    public boolean isAvailable() {
+        return isAvailable;
+    }
+
+    public void setAvailable(boolean available) {
+        isAvailable = available;
+    }
+
+    public boolean isPopular() {
+        return isPopular;
+    }
+
+    public void setPopular(boolean popular) {
+        isPopular = popular;
+    }
 
     @DrawableRes
-    public int getIconResId() { return iconResId; }
-    public void setIconResId(@DrawableRes int iconResId) { this.iconResId = iconResId; }
+    public int getIconResId() {
+        return iconResId;
+    }
+
+    public void setIconResId(@DrawableRes int iconResId) {
+        this.iconResId = iconResId;
+    }
 
     @DrawableRes
-    public int getMarkerResId() { return markerResId; }
-    public void setMarkerResId(@DrawableRes int markerResId) { this.markerResId = markerResId; }
+    public int getMarkerResId() {
+        return markerResId;
+    }
 
-    public int getColorPrimary() { return colorPrimary; }
-    public void setColorPrimary(int colorPrimary) { this.colorPrimary = colorPrimary; }
+    public void setMarkerResId(@DrawableRes int markerResId) {
+        this.markerResId = markerResId;
+    }
 
-    public boolean isHasAC() { return hasAC; }
-    public void setHasAC(boolean hasAC) { this.hasAC = hasAC; }
+    public int getColorPrimary() {
+        return colorPrimary;
+    }
 
-    public boolean isHasWiFi() { return hasWiFi; }
-    public void setHasWiFi(boolean hasWiFi) { this.hasWiFi = hasWiFi; }
+    public void setColorPrimary(int colorPrimary) {
+        this.colorPrimary = colorPrimary;
+    }
 
-    public boolean isHasChildSeat() { return hasChildSeat; }
-    public void setHasChildSeat(boolean hasChildSeat) { this.hasChildSeat = hasChildSeat; }
+    public boolean isHasAC() {
+        return hasAC;
+    }
 
-    public boolean isWheelchairAccessible() { return isWheelchairAccessible; }
-    public void setWheelchairAccessible(boolean wheelchairAccessible) { isWheelchairAccessible = wheelchairAccessible; }
+    public void setHasAC(boolean hasAC) {
+        this.hasAC = hasAC;
+    }
 
+    public boolean isHasWiFi() {
+        return hasWiFi;
+    }
 
-    /**
-     * @deprecated Use getIconResId() instead
-     */
+    public void setHasWiFi(boolean hasWiFi) {
+        this.hasWiFi = hasWiFi;
+    }
+
+    public boolean isHasChildSeat() {
+        return hasChildSeat;
+    }
+
+    public void setHasChildSeat(boolean hasChildSeat) {
+        this.hasChildSeat = hasChildSeat;
+    }
+
+    public boolean isWheelchairAccessible() {
+        return isWheelchairAccessible;
+    }
+
+    public void setWheelchairAccessible(boolean wheelchairAccessible) {
+        isWheelchairAccessible = wheelchairAccessible;
+    }
+
+    // ==================== DEPRECATED METHODS ====================
+
     @Deprecated
     public Drawable getImage() {
         return null;
     }
 
-    /**
-     * @deprecated Use getCapacity() instead
-     */
     @Deprecated
     public int getPeople() {
         return capacity;
     }
 
+    // ==================== FARE CALCULATION METHODS ====================
 
-    /**
-     * Calculate fare for a given distance
-     */
     public double calculateFare(double distanceKm) {
         double fare = baseFare + (distanceKm * pricePerKm);
         return Math.max(fare, minimumFare);
     }
 
-    /**
-     * Calculate fare with duration (for traffic/waiting)
-     */
     public double calculateFareWithDuration(double distanceKm, long durationMinutes) {
         double distanceFare = baseFare + (distanceKm * pricePerKm);
         double timeFare = durationMinutes * pricePerMinute;
         return Math.max(distanceFare + timeFare, minimumFare);
     }
 
-    /**
-     * Calculate fare with surge pricing
-     */
     public double calculateFareWithSurge(double distanceKm, double surgeMultiplier) {
         double fare = (baseFare + (distanceKm * pricePerKm)) * surgeMultiplier;
         return Math.max(fare, minimumFare);
     }
 
-    /**
-     * Get estimated fare string
-     */
     public String getEstimatedFareString(double distanceKm) {
         double fare = calculateFare(distanceKm);
         return String.format("Rs. %.0f", fare);
     }
 
-    /**
-     * Get formatted price string
-     */
     public String getPriceString() {
         return String.format("Rs. %.0f/km", pricePerKm);
     }
 
-    /**
-     * Get base fare string
-     */
     public String getBaseFareString() {
         return String.format("Rs. %.0f", baseFare);
     }
 
-    /**
-     * Check if vehicle type is economy
-     */
+    // ==================== VEHICLE TYPE CHECKERS ====================
+
     public boolean isEconomy() {
         return "economy".equals(vehicleType);
     }
 
-    /**
-     * Check if vehicle type is premium
-     */
     public boolean isPremium() {
         return "premium".equals(vehicleType);
     }
 
-    /**
-     * Check if vehicle type is XL
-     */
     public boolean isXl() {
         return "xl".equals(vehicleType);
     }
 
-    /**
-     * Check if vehicle type is bike
-     */
     public boolean isBike() {
         return "bike".equals(vehicleType);
     }
 
+    // ==================== CAPACITY & FEATURES ====================
 
-    /**
-     * Get capacity description
-     */
     public String getCapacityDescription() {
         if (capacity == 1) {
             return "1 seat";
@@ -380,9 +491,6 @@ public class ServiceType {
         }
     }
 
-    /**
-     * Get luggage description
-     */
     public String getLuggageDescription() {
         if (luggageCapacity == 0) {
             return "No luggage";
@@ -393,9 +501,6 @@ public class ServiceType {
         }
     }
 
-    /**
-     * Get features as list of strings
-     */
     public String[] getFeaturesList() {
         java.util.ArrayList<String> features = new java.util.ArrayList<>();
 
@@ -410,12 +515,11 @@ public class ServiceType {
         return features.toArray(new String[0]);
     }
 
-    /**
-     * Get features as comma-separated string
-     */
     public String getFeaturesString() {
         return android.text.TextUtils.join(" • ", getFeaturesList());
     }
+
+    // ==================== OBJECT METHODS ====================
 
     @Override
     public boolean equals(Object obj) {
@@ -443,48 +547,42 @@ public class ServiceType {
 
     // ==================== FACTORY METHODS ====================
 
-    /**
-     * Create Economy service type
-     */
     public static ServiceType createEconomy() {
-        return new ServiceType("economy", "Economy", "economy", 15.0, 4, R.drawable.ic_economy_car);
+        ServiceType economy = new ServiceType("economy", "Economy", "economy", 15.0, 4, R.drawable.ic_economy_car);
+        economy.setSharingDiscount(0.3);
+        economy.setMaxSharedPassengers(4);
+        return economy;
     }
 
-    /**
-     * Create Premium service type
-     */
     public static ServiceType createPremium() {
-        return new ServiceType("premium", "Premium", "premium", 25.0, 4, R.drawable.ic_premium_car);
+        ServiceType premium = new ServiceType("premium", "Premium", "premium", 25.0, 4, R.drawable.ic_premium_car);
+        premium.setSharingDiscount(0.3);
+        premium.setMaxSharedPassengers(4);
+        return premium;
     }
 
-    /**
-     * Create XL service type
-     */
     public static ServiceType createXl() {
-        return new ServiceType("xl", "XL", "xl", 35.0, 6, R.drawable.ic_suv);
+        ServiceType xl = new ServiceType("xl", "XL", "xl", 35.0, 6, R.drawable.ic_suv);
+        xl.setSharingDiscount(0.3);
+        xl.setMaxSharedPassengers(6);
+        return xl;
     }
 
-    /**
-     * Create Bike service type
-     */
     public static ServiceType createBike() {
         ServiceType bike = new ServiceType("bike", "Bike", "bike", 10.0, 1, R.drawable.ic_bike);
         bike.setBaseFare(30.0);
         bike.setMinimumFare(50.0);
+        bike.setSharingDiscount(0.3);
+        bike.setMaxSharedPassengers(1);
         return bike;
     }
 
-
-    /**
-     * Get default list of service types
-     */
     public static java.util.List<ServiceType> getDefaultList() {
         java.util.ArrayList<ServiceType> list = new java.util.ArrayList<>();
         list.add(createEconomy());
         list.add(createPremium());
         list.add(createXl());
-        // list.add(createBike()); // Uncomment for bike option
-        // list.add(createRickshaw()); // Uncomment for rickshaw option
+        list.add(createBike());
         return list;
     }
 }

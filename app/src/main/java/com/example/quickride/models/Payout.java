@@ -24,23 +24,23 @@ public class Payout {
 
     private String payoutId;
     private String driverId;
-    private String period;           // e.g., "Week 12, 2024" or "March 2024"
+    private String period;
     private double amount;
     private int rideCount;
-    private double distance;          // Total distance in km
-    private long duration;            // Total duration in minutes
+    private double distance;
+    private long duration;
 
     // Status fields
-    private String status;            // "available", "pending", "completed", "cancelled"
-    private String paymentMethod;      // "jazzcash", "easypaisa", "bank"
-    private String accountDetails;     // Mobile number or bank account
+    private String status;
+    private String paymentMethod;
+    private String accountDetails;
     private String accountHolderName;
 
     // Timestamps
-    private long earnedAt;             // When the earnings were accrued
-    private long requestedAt;           // When withdrawal was requested
-    private long processedAt;           // When payment was completed
-    private long cancelledAt;           // If cancelled
+    private long earnedAt;
+    private long requestedAt;
+    private long processedAt;
+    private long cancelledAt;
 
     // Transaction details
     private String transactionId;

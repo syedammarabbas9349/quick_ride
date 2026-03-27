@@ -3,6 +3,7 @@ package com.example.quickride.driver;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -27,6 +28,7 @@ import java.util.Map;
 
 public class DriverChooseTypeActivity extends AppCompatActivity {
 
+    private static final String TAG = "DriverChooseTypeActivity";
     private TypeAdapter typeAdapter;
     private final List<ServiceType> typeList = new ArrayList<>();
     private Button btnConfirm;
@@ -87,8 +89,9 @@ public class DriverChooseTypeActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        typeAdapter = new TypeAdapter(typeList, this, null, (type, position) -> {
+        typeAdapter = new TypeAdapter(typeList, this, null, (type, position, sharingEnabled) -> {
             // Handle type selection if needed
+            Log.d(TAG, "Type selected: " + type.getName() + ", Sharing: " + sharingEnabled);
         });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

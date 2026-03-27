@@ -178,6 +178,23 @@
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/colorPrimary" />
+                <!-- Add after the fare TextView -->
+                <TextView
+                    android:id="@+id/tvSharingBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvPassengerCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 

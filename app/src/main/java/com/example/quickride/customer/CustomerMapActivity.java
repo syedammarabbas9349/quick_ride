@@ -44,6 +44,7 @@ import com.example.quickride.auth.LauncherActivity;
 import com.example.quickride.history.HistoryActivity;
 import com.example.quickride.models.RideRequest;
 import com.example.quickride.models.ServiceType;
+import com.example.quickride.models.SharedPassenger;
 import com.example.quickride.payment.AddPaymentActivity;
 import com.example.quickride.payment.PaymentActivity;
 import com.example.quickride.utils.LocationHelper;
@@ -78,6 +79,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -331,8 +333,8 @@ public class CustomerMapActivity extends AppCompatActivity
                 typeArrayList,
                 this,
                 routeData,
-                (type, position) -> {
-                    Log.d(TAG,"Vehicle selected: " + type.getName());
+                (type, position, sharingEnabled) -> {  // ✅ 3 parameters
+                    Log.d(TAG,"Vehicle selected: " + type.getName() + ", Sharing: " + sharingEnabled);
                 });
 
         mRecyclerView.setAdapter(mAdapter);
@@ -340,6 +342,11 @@ public class CustomerMapActivity extends AppCompatActivity
 
     private ArrayList<ServiceType> getTypeList() {
         ArrayList<ServiceType> types = new ArrayList<>();
+
+        ServiceType bike = new ServiceType("bike", "Bike", "bike", 10.0, 1, R.drawable.ic_bike);
+        bike.setBaseFare(30.0);
+        bike.setMinimumFare(50.0);
+        types.add(bike);
 
         ServiceType economy = new ServiceType("economy", "Economy", "economy", 15.0, 4, R.drawable.ic_economy_car);
         economy.setBaseFare(50.0);
@@ -391,6 +398,9 @@ public class CustomerMapActivity extends AppCompatActivity
 
             for (Location location : locationResult.getLocations()) {
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+
+                // ✅ Set current location in LocationHelper
+                mLocationHelper.setCurrentLocation(latLng);
 
                 if (!zoomUpdated && mMap != null) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17f));
@@ -543,6 +553,20 @@ public class CustomerMapActivity extends AppCompatActivity
                 mMap.setMyLocationEnabled(true);
             }
             startLocationUpdates();
+
+            // ✅ Try to get last known location immediately
+            FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                    if (location != null) {
+                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                        mLocationHelper.setCurrentLocation(latLng);
+                        if (!getDriversAroundStarted) {
+                            getDriversAround();
+                        }
+                    }
+                });
+            }
         }
 
         // Setup marker drag listener
@@ -633,40 +657,77 @@ public class CustomerMapActivity extends AppCompatActivity
     }
 
     private void getDriversAround() {
-        if (mLocationHelper.getCurrentLocation() == null) return;
-
-        getDriversAroundStarted = true;
         LatLng current = mLocationHelper.getCurrentLocation();
+
+        if (current == null) {
+            Log.e(TAG, "❌ Cannot search: current location is null");
+
+            // Try to get location one more time
+            if (mLocationHelper.hasLocationPermission()) {
+                FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                        if (location != null) {
+                            // ✅ Use a new variable instead of reassigning
+                            LatLng newLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                            mLocationHelper.setCurrentLocation(newLocation);
+                            performDriverSearch(newLocation);
+                        } else {
+                            Log.e(TAG, "❌ Still no location after retry");
+                        }
+                    });
+                    return;
+                }
+            }
+            return;
+        }
+
+        performDriverSearch(current);
+    }
+
+    private void performDriverSearch(LatLng current) {
+        Log.d(TAG, "======================================");
+        Log.d(TAG, "🔍 SEARCHING FOR DRIVERS");
+        Log.d(TAG, "📍 Customer location: " + current.latitude + ", " + current.longitude);
+        Log.d(TAG, "📏 Search radius: 50000 meters (50km)");
+        Log.d(TAG, "======================================");
 
         DatabaseReference driversLocation = FirebaseDatabase.getInstance()
                 .getReference().child("driversWorking");
 
         GeoFire geoFire = new GeoFire(driversLocation);
         GeoQuery geoQuery = geoFire.queryAtLocation(
-                new GeoLocation(current.latitude, current.longitude), 10000);
+                new GeoLocation(current.latitude, current.longitude), 50000);
 
         geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
+                Log.d(TAG, "✅ DRIVER FOUND: " + key);
+                Log.d(TAG, "   Location: " + location.latitude + ", " + location.longitude);
                 addDriverMarker(key, location);
             }
 
             @Override
             public void onKeyExited(String key) {
+                Log.d(TAG, "🚫 Driver exited: " + key);
                 removeDriverMarker(key);
             }
 
             @Override
             public void onKeyMoved(String key, GeoLocation location) {
+                Log.d(TAG, "🔄 Driver moved: " + key);
                 updateDriverMarker(key, location);
             }
 
             @Override
-            public void onGeoQueryReady() {}
+            public void onGeoQueryReady() {
+                Log.d(TAG, "✅ GeoQuery complete - finished searching for drivers");
+            }
 
             @Override
             public void onGeoQueryError(DatabaseError error) {
-                Log.e(TAG, "GeoQuery error: " + error.getMessage());
+                Log.e(TAG, "❌ GeoQuery error: " + error.getMessage());
             }
         });
     }
@@ -677,7 +738,7 @@ public class CustomerMapActivity extends AppCompatActivity
         LatLng driverLatLng = new LatLng(location.latitude, location.longitude);
         Marker marker = mMap.addMarker(new MarkerOptions()
                 .position(driverLatLng)
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car_top))
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))  // ← Temporary
                 .title(driverId));
 
         marker.setTag(driverId);
@@ -717,6 +778,19 @@ public class CustomerMapActivity extends AppCompatActivity
 
         showBottomSheet(3);
 
+        // Get sharing status from adapter
+        boolean sharingEnabled = mAdapter.isSharingEnabled();
+        ServiceType selectedType = mAdapter.getSelectedItem();
+
+        // Calculate fares
+        double originalFare = calculateFare();
+        double finalFare = sharingEnabled ?
+                originalFare * (1 - selectedType.getSharingDiscount()) : originalFare;
+
+        // Create shareRideId if sharing enabled
+        String shareRideId = sharingEnabled ?
+                FirebaseDatabase.getInstance().getReference().child("shared_rides").push().getKey() : null;
+
         mCurrentRide.setCustomerId(FirebaseAuth.getInstance().getCurrentUser().getUid());
         mCurrentRide.setPickupLat(pickupLatLng.latitude);
         mCurrentRide.setPickupLng(pickupLatLng.longitude);
@@ -724,14 +798,60 @@ public class CustomerMapActivity extends AppCompatActivity
         mCurrentRide.setDestLat(destinationLatLng.latitude);
         mCurrentRide.setDestLng(destinationLatLng.longitude);
         mCurrentRide.setDestinationAddress(destinationAddress);
-        mCurrentRide.setVehicleType(mAdapter.getSelectedItem().getVehicleType());
-        mCurrentRide.setFare(calculateFare());
+        mCurrentRide.setVehicleType(selectedType.getVehicleType());
+        mCurrentRide.setOriginalFare(originalFare);
+        mCurrentRide.setFare(finalFare);
+        mCurrentRide.setSharingEnabled(sharingEnabled);
+        mCurrentRide.setSharingDiscount(selectedType.getSharingDiscount());
+        mCurrentRide.setShareRideId(shareRideId);
+        mCurrentRide.setMaxPassengers(selectedType.getMaxSharedPassengers());
+        mCurrentRide.setCurrentPassengers(1);
+        mCurrentRide.setShareStatus(sharingEnabled ? "sharing" : "solo");
         mCurrentRide.setStatus("pending");
         mCurrentRide.setTimestamp(System.currentTimeMillis());
+
+        // Create passenger info if sharing
+        if (sharingEnabled) {
+            List<SharedPassenger> passengers = new ArrayList<>();
+            SharedPassenger currentPassenger = new SharedPassenger(
+                    mCurrentRide.getCustomerId(),
+                    getCurrentCustomerName(),
+                    getCurrentCustomerPhone(),
+                    getCurrentCustomerImageUrl(),
+                    true
+            );
+            currentPassenger.setPickupLat(pickupLatLng.latitude);
+            currentPassenger.setPickupLng(pickupLatLng.longitude);
+            currentPassenger.setPickupAddress(pickupAddress);
+            currentPassenger.setDropoffLat(destinationLatLng.latitude);
+            currentPassenger.setDropoffLng(destinationLatLng.longitude);
+            currentPassenger.setDropoffAddress(destinationAddress);
+            currentPassenger.setFareShare(finalFare);
+            currentPassenger.setStatus("pending");
+
+            passengers.add(currentPassenger);
+            mCurrentRide.setPassengers(passengers);
+        }
 
         saveRideRequest();
         setupRideTimeout();
         requestListener();
+    }
+
+    // Helper methods to get customer info
+    private String getCurrentCustomerName() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        return user != null ? user.getDisplayName() : "Customer";
+    }
+
+    private String getCurrentCustomerPhone() {
+        // Implement based on your user data storage
+        return "";
+    }
+
+    private String getCurrentCustomerImageUrl() {
+        // Implement based on your user data storage
+        return "";
     }
 
     private double calculateFare() {
@@ -760,9 +880,21 @@ public class CustomerMapActivity extends AppCompatActivity
         rideMap.put("status", mCurrentRide.getStatus());
         rideMap.put("timestamp", mCurrentRide.getTimestamp());
 
+        // ADD THIS: GeoFire location for driver to find
+        rideMap.put("l", Arrays.asList(pickupLatLng.latitude, pickupLatLng.longitude));
+
+        // ADD THESE DEBUG LOGS
+        Log.d(TAG, "======================================");
+        Log.d(TAG, "📢 SAVING RIDE REQUEST");
+        Log.d(TAG, "   Path: " + ref.toString());
+        Log.d(TAG, "   Vehicle type: '" + mCurrentRide.getVehicleType() + "'");
+        Log.d(TAG, "   Pickup: " + pickupLatLng.latitude + ", " + pickupLatLng.longitude);
+        Log.d(TAG, "   Status: pending");
+        Log.d(TAG, "======================================");
+
         ref.setValue(rideMap)
-                .addOnSuccessListener(aVoid -> Log.d(TAG, "Ride request saved"))
-                .addOnFailureListener(e -> Log.e(TAG, "Failed to save ride request", e));
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ Ride request saved successfully!"))
+                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to save ride request", e));
 
         requestBol = true;
         mRequest.setText(R.string.getting_driver);
@@ -920,7 +1052,7 @@ public class CustomerMapActivity extends AppCompatActivity
         mDriverMarker = mMap.addMarker(new MarkerOptions()
                 .position(driverLatLng)
                 .title("Your Driver")
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car_top)));
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));  // ← Use default marker
     }
 
     private void updateDriverDistance(LatLng driverLatLng) {

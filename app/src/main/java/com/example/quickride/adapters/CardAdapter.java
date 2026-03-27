@@ -7,15 +7,15 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.example.quickride.R;
 import com.example.quickride.models.PaymentMethod;
-import com.example.quickride.payment.PaymentActivity;
+
 
 import java.util.List;
 
@@ -70,27 +70,51 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.ViewHolder> {
             holder.defaultBadge.setVisibility(View.GONE);
         }
 
-        holder.itemView.setOnClickListener(v -> {
-            int previousSelected = selectedPosition;
-            selectedPosition = position;
-            notifyItemChanged(previousSelected);
-            notifyItemChanged(selectedPosition);
+        // For non-cash methods, add a "Coming Soon" indicator
+        if (!"cash".equals(method.getType())) {
+            // You could add a small TextView or change the appearance
+            holder.paymentExtra.setText("Coming Soon");
+            holder.paymentExtra.setTextColor(activity.getColor(android.R.color.darker_gray));
+            holder.paymentExtra.setVisibility(View.VISIBLE);
 
-            if (listener != null) {
-                listener.onItemClick(method, position);
-            }
-        });
+            // Make the item not clickable for selection
+            holder.itemView.setOnClickListener(v -> {
+                Toast.makeText(activity,
+                        "JazzCash/EasyPaisa coming soon! Please use Cash for now.",
+                        Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            holder.itemView.setOnClickListener(v -> {
+                int previousSelected = selectedPosition;
+                selectedPosition = position;
+                notifyItemChanged(previousSelected);
+                notifyItemChanged(selectedPosition);
 
-        holder.itemView.setOnLongClickListener(v -> {
-            if (listener != null) {
-                listener.onDelete(method, position);
-            }
-            return true;
-        });
+                if (listener != null) {
+                    listener.onItemClick(method, position);
+                }
+            });
+        }
+
+        // Keep long click for delete (but maybe disable for non-cash)
+        if ("cash".equals(method.getType())) {
+            holder.itemView.setOnLongClickListener(null);
+        } else {
+            holder.itemView.setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onDelete(method, position);
+                }
+                return true;
+            });
+        }
 
         holder.setDefaultButton.setOnClickListener(v -> {
-            if (listener != null) {
+            if (listener != null && "cash".equals(method.getType())) {
                 listener.onSetDefault(method, position);
+            } else if (!"cash".equals(method.getType())) {
+                Toast.makeText(activity,
+                        "Cannot set as default - coming soon",
+                        Toast.LENGTH_SHORT).show();
             }
         });
     }
