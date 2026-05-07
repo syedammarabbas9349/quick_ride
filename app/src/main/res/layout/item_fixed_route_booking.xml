@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@+id/btnDeleteBooking">
+
+            <TextView
+                android:id="@+id/tvRiderName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rider Name"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:id="@+id/tvRiderPhone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="03001234567"
+                android:textSize="16sp"
+                android:layout_marginTop="4dp"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
+                android:id="@+id/tvTimestamp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Booked at: 10:30 AM"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp"
+                android:textColor="#757575" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/btnDeleteBooking"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:padding="4dp"
+            android:src="@drawable/ic_delete"
+            app:tint="#F44336"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+    </RelativeLayout>
+
+</androidx.cardview.widget.CardView>

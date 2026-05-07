@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors - Brand Colors (Dark Mode) -->
+    <color name="colorPrimary">#BB86FC</color>        <!-- Lighter purple for dark mode -->
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorPrimaryLight">#332200</color>
+    <color name="colorPrimaryVariant">#3700B3</color>
+
+    <!-- Secondary Colors - Accent Colors (Dark Mode) -->
+    <color name="colorAccent">#03DAC6</color>
+    <color name="colorSecondary">#03DAC6</color>
+    <color name="colorSecondaryVariant">#03DAC6</color>
+    <color name="colorSecondaryLight">#03DAC6</color>
+
+    <!-- Neutral Colors - Greyscale (Dark Mode) -->
+    <color name="white">#121212</color>               <!-- Dark background instead of white -->
+    <color name="black">#FFFFFF</color>               <!-- White text instead of black -->
+
+    <color name="grey_50">#1E1E1E</color>             <!-- Dark backgrounds -->
+    <color name="grey_100">#2C2C2C</color>
+    <color name="grey_200">#3C3C3C</color>
+    <color name="grey_300">#4C4C4C</color>
+    <color name="grey_400">#5C5C5C</color>
+    <color name="grey_500">#6C6C6C</color>
+    <color name="grey_600">#7C7C7C</color>
+    <color name="grey_700">#8C8C8C</color>
+    <color name="grey_800">#9C9C9C</color>
+    <color name="grey_900">#AEAEAE</color>             <!-- Light text -->
+
+    <!-- Status Colors (Dark Mode) -->
+    <color name="success">#4CAF50</color>
+    <color name="success_light">#1E3A2E</color>       <!-- Darker green background -->
+    <color name="success_dark">#2E7D32</color>
+
+    <color name="error">#F44336</color>
+    <color name="error_light">#3A1E1E</color>         <!-- Darker red background -->
+    <color name="error_dark">#C62828</color>
+
+    <color name="warning">#FF9800</color>
+    <color name="warning_light">#3A2E1E</color>       <!-- Darker orange background -->
+    <color name="warning_dark">#EF6C00</color>
+
+    <color name="info">#2196F3</color>
+    <color name="info_light">#1E2A3A</color>          <!-- Darker blue background -->
+    <color name="info_dark">#1565C0</color>
+
+    <!-- Semantic Colors (Dark Mode) -->
+    <color name="available">#4CAF50</color>
+    <color name="pending">#FF9800</color>
+    <color name="completed">#2196F3</color>
+    <color name="cancelled">#F44336</color>
+    <color name="paid">#4CAF50</color>
+
+    <!-- Text Colors (Dark Mode) -->
+    <color name="text_primary">#E1E1E1</color>        <!-- Light text on dark background -->
+    <color name="text_secondary">#A1A1A1</color>
+    <color name="text_hint">#717171</color>
+    <color name="text_disabled">#616161</color>
+    <color name="text_inverse">#121212</color>        <!-- Dark text on light backgrounds -->
+
+    <!-- UI Element Colors (Dark Mode) -->
+    <color name="input_background">#2C2C2C</color>
+    <color name="input_border">#4C4C4C</color>
+    <color name="input_text">#E1E1E1</color>
+    <color name="input_border_focused">#BB86FC</color> <!-- Lighter primary for dark mode -->
+
+    <color name="card_background">#2C2C2C</color>
+    <color name="card_stroke">#4C4C4C</color>
+
+    <color name="bottom_sheet_background">#2C2C2C</color>
+    <color name="bottom_sheet_handle">#5C5C5C</color>
+
+    <!-- Navigation Drawer (Dark Mode) -->
+    <color name="nav_header_bg">#1E1E1E</color>
+    <color name="nav_item_text">#E1E1E1</color>
+    <color name="nav_item_icon">#A1A1A1</color>
+    <color name="nav_item_selected_bg">#332200</color>
+
+    <!-- Progress Bar (Dark Mode) -->
+    <color name="progress_bar_track">#4C4C4C</color>
+    <color name="progress_bar_indicator">#BB86FC</color>
+
+    <!-- Switch Colors (Dark Mode) -->
+    <color name="switch_thumb_on">#BB86FC</color>
+    <color name="switch_track_on">#BB86FC80</color>
+
+    <!-- Divider (Dark Mode) -->
+    <color name="divider">#4C4C4C</color>
+
+    <!-- Selected Item Background (Dark Mode) -->
+    <color name="selected_item_bg">#332200</color>
+    <color name="selected_item_border">#BB86FC</color>
+
+    <!-- Overlay (Dark Mode) -->
+    <color name="overlay_dark">#CC000000</color>
+    <color name="overlay_light">#33FFFFFF</color>
+
+    <!-- Transparency Variants (Dark Mode) -->
+    <color name="primary_alpha_10">#1ABB86FC</color>
+    <color name="primary_alpha_20">#33BB86FC</color>
+    <color name="primary_alpha_30">#4DBB86FC</color>
+    <color name="primary_alpha_40">#66BB86FC</color>
+    <color name="primary_alpha_50">#80BB86FC</color>
+    <color name="primary_alpha_60">#99BB86FC</color>
+    <color name="primary_alpha_70">#B3BB86FC</color>
+    <color name="primary_alpha_80">#CCBB86FC</color>
+    <color name="primary_alpha_90">#E6BB86FC</color>
+
+    <color name="black_alpha_10">#1AFFFFFF</color>     <!-- Black in dark mode is actually white -->
+    <color name="black_alpha_20">#33FFFFFF</color>
+    <color name="black_alpha_30">#4DFFFFFF</color>
+    <color name="black_alpha_40">#66FFFFFF</color>
+    <color name="black_alpha_50">#80FFFFFF</color>
+    <color name="black_alpha_60">#99FFFFFF</color>
+    <color name="black_alpha_70">#B3FFFFFF</color>
+    <color name="black_alpha_80">#CCFFFFFF</color>
+    <color name="black_alpha_90">#E6FFFFFF</color>
+    <color name="teal_700">#018786</color>
+    <color name="red_500">#F44336</color>
+    <color name="red_100">#FFCDD2</color>
+    <color name="red_900">#B71C1C</color>
+    <color name="colorPrimaryVariant_dark">#3700B3</color>
+    <color name="white_alpha_10">#1A121212</color>     <!-- White in dark mode is actually dark -->
+    <color name="white_alpha_20">#33121212</color>
+    <color name="white_alpha_30">#4D121212</color>
+    <color name="white_alpha_40">#66121212</color>
+    <color name="white_alpha_50">#80121212</color>
+    <color name="white_alpha_60">#99121212</color>
+    <color name="white_alpha_70">#B3121212</color>
+    <color name="white_alpha_80">#CC121212</color>
+    <color name="white_alpha_90">#E6121212</color>
+</resources>
